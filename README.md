@@ -4,6 +4,12 @@ A single, offline HTML file for comparing two coders' annotations of the same cl
 
 It reads the `note-coder/v1` JSON export format (see [`examples/`](examples/)). Everything runs in your browser: there is nothing to install, no server, and no network access.
 
+![Side-by-side text view with validation results and the span detail panel](docs/screenshots/text-view.png)
+
+![Statistics tab: whole-note, per-code and note-level agreement](docs/screenshots/statistics.png)
+
+*Screenshots show the synthetic example note and example coding in [`examples/`](examples/); no real patient data.*
+
 ## Quick start
 
 1. Download [`coder-agreement-viewer.html`](coder-agreement-viewer.html) (on GitHub: open the file, then **Download raw file**).
