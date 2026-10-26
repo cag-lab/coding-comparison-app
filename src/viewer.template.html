@@ -95,7 +95,7 @@ main{padding:8px 24px 40px;display:grid;gap:14px}
 .stat .k{font-size:12px;color:var(--muted)}
 .stat .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
 .stat .s{font-size:12px;color:var(--muted)}
-.band{font-size:11px;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;font-weight:500}
+.band{font-size:11px;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;font-weight:500;white-space:nowrap;display:inline-block}
 .band.good{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
 .band.mid{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .band.bad{background:color-mix(in srgb,var(--err) 16%,transparent);color:var(--err)}
@@ -555,6 +555,33 @@ const Core = (() => {
       codebookCount: A.meta.codebook_code_count
     };
 
+    // yes/no: was each code applied anywhere in the note?
+    const summarize = (x, y) => {
+      let yy = 0, yn = 0, ny = 0, nn = 0;
+      for (let i = 0; i < x.length; i++) {
+        if (x[i] && y[i]) yy++; else if (x[i]) yn++; else if (y[i]) ny++; else nn++;
+      }
+      return {
+        n: x.length, bothYes: yy, aOnly: yn, bOnly: ny, bothNo: nn,
+        pctAgree: pctAgree(x, y),
+        positiveAgreement: (2 * yy + yn + ny) ? 2 * yy / (2 * yy + yn + ny) : null,
+        negativeAgreement: (2 * nn + yn + ny) ? 2 * nn / (2 * nn + yn + ny) : null,
+        kappa: cohenKappa(x, y), alpha: alphaNominal(x, y)
+      };
+    };
+    const cbA = A.meta.codebook_code_count, cbB = B.meta.codebook_code_count;
+    const sameCodebook = A.meta.codebook_sha256 && A.meta.codebook_sha256 === B.meta.codebook_sha256 && cbA === cbB;
+    const cbCount = (sameCodebook && Number.isInteger(cbA) && cbA >= codes.length) ? cbA : null;
+    const unused = cbCount != null ? cbCount - codes.length : null;
+    const pad = (arr) => arr.concat(new Array(unused || 0).fill(0));
+    const presence = {
+      rows: codes.map((c, i) => ({ code: c, label: labels[c], presentA: !!prA[i], presentB: !!prB[i], agree: prA[i] === prB[i] })),
+      codesUsed: summarize(prA, prB),
+      codebook: cbCount != null ? summarize(pad(prA), pad(prB)) : null,
+      codebookCount: cbCount,
+      unusedCodes: unused
+    };
+
     // segments for rendering
     const bset = new Set([0, N]);
     for (const a of all) { bset.add(a.start); bset.add(a.end); }
@@ -573,7 +600,7 @@ const Core = (() => {
     if (units.length < 10) warnings.push('Fewer than 10 text units; text-level kappa, alpha and ICC are unstable.');
     if (codes.length < 5) warnings.push('Only ' + codes.length + ' code(s) in use, so note-level statistics across codes rest on very few data points. Note-level ICC becomes meaningful when you compare many notes.');
 
-    return { text, codes, labels, units, perCode, overall, note, segs, spans, warnings, opts: Object.assign({}, opts) };
+    return { text, codes, labels, units, perCode, overall, note, presence, segs, spans, warnings, opts: Object.assign({}, opts) };
   }
 
   return { MAX_BYTES, validateFile, crossValidate, sha256Hex, normalize, buildUnits, compute,
@@ -909,6 +936,49 @@ const UI = (() => {
     return wrap;
   }
 
+  const yn = v => v ? 'yes' : 'no';
+
+  function renderPresence(root) {
+    const p = state.result.presence, a = state.A.coder, b = state.B.coder;
+    root.appendChild(h('h2', null, 'Code present in the note (yes / no)'));
+    root.appendChild(h('p', 'muted', 'Ignores where and how often a code was applied: only whether each coder used it anywhere in the note.'));
+
+    const rows = p.rows.map(x => {
+      const ag = h('span', 'st ' + (x.agree ? 'st-matched' : 'st-none'), x.agree ? 'agree' : 'disagree');
+      return [codeChip(x.code), yn(x.presentA), yn(x.presentB), ag];
+    });
+    if (p.unusedCodes) {
+      const lab = h('span', 'muted', p.unusedCodes + ' other codebook code' + (p.unusedCodes === 1 ? '' : 's') + ' (not named in the exports)');
+      rows.push([lab, 'no', 'no', h('span', 'st st-matched', 'agree × ' + p.unusedCodes)]);
+    }
+    root.appendChild(table([['Code'], ['Coder A · ' + a], ['Coder B · ' + b], ['']], rows, 99));
+
+    const cols = [['Codes used by either coder (n = ' + p.codesUsed.n + ')', p.codesUsed]];
+    if (p.codebook) cols.push(['All codebook codes (n = ' + p.codebook.n + ')', p.codebook]);
+    const measures = [
+      ['Both yes', s => String(s.bothYes)],
+      ['Only ' + a + ' (A)', s => String(s.aOnly)],
+      ['Only ' + b + ' (B)', s => String(s.bOnly)],
+      ['Both no', s => String(s.bothNo)],
+      ['% agreement', s => pct(s.pctAgree)],
+      ['Positive agreement', s => fmt(s.positiveAgreement)],
+      ['Negative agreement', s => fmt(s.negativeAgreement)],
+      ['Cohen κ', s => fmt(s.kappa)],
+      ['Krippendorff α', s => {
+        const e = h('span', null, fmt(s.alpha)); const bd = bandEl(s.alpha); if (bd) e.appendChild(bd); return e;
+      }]
+    ];
+    root.appendChild(table([['Measure']].concat(cols.map(c => [c[0]])),
+      measures.map(([name, f]) => [name].concat(cols.map(c => f(c[1])))), 1));
+
+    if (p.codebook) {
+      root.appendChild(h('p', 'muted', 'The right-hand column counts the ' + p.unusedCodes + ' codebook code(s) neither coder used as agreeing "no". Use it when absence of a code is a real judgment; use the left-hand column to focus on codes someone actually applied.'));
+    } else {
+      root.appendChild(h('div', 'warnbox', 'Codes neither coder used cannot be counted because the codebook size is missing or differs between files, so only codes used by at least one coder are included.'));
+    }
+    root.appendChild(h('div', 'warnbox', 'With one note there is one yes/no per code, so κ and α here rest on only a handful of data points. Positive agreement (2 × both yes ÷ total yes from both coders) is often easier to read for a single note.'));
+  }
+
   function renderStats() {
     const r = state.result, o = r.overall, root = $('tab-stats');
     root.replaceChildren();
@@ -947,16 +1017,14 @@ const UI = (() => {
 
     root.appendChild(h('h2', null, 'Note level (code counts)'));
     const n = r.note;
-    root.appendChild(table([['Code'], ['Spans A'], ['Spans B'], ['Both used it?']],
-      n.rows.map(x => [codeChip(x.code), String(x.countA), String(x.countB), x.presentA && x.presentB ? 'yes' : 'no']), 1, 2));
+    root.appendChild(table([['Code'], ['Spans A'], ['Spans B']],
+      n.rows.map(x => [codeChip(x.code), String(x.countA), String(x.countB)]), 1));
     const nc = h('div', 'cards');
-    nc.appendChild(statCard('Code presence agreement', pct(n.presencePct), 'κ ' + fmt(n.presenceKappa) + ' · across ' + n.n + ' code(s) used by either coder'));
     nc.appendChild(statCard('ICC(2,1) on counts', fmt(n.countIcc2), 'ICC(3,1) ' + fmt(n.countIcc3) + ' · n = ' + n.n + ' codes'));
     nc.appendChild(statCard('Krippendorff α on counts', fmt(n.countAlpha), 'interval metric', n.countAlpha));
     root.appendChild(nc);
-    if (n.codebookCount && n.codebookCount > n.n) {
-      root.appendChild(h('div', 'warnbox', 'The codebook lists ' + n.codebookCount + ' codes but only ' + n.n + ' appear in these files. Codes neither coder used cannot be identified from the exports, so they are not counted as agreements; presence agreement is therefore conservative.'));
-    }
+
+    renderPresence(root);
 
     const det = h('details', 'method');
     det.appendChild(h('summary', null, 'How these are calculated'));
@@ -967,6 +1035,7 @@ const UI = (() => {
       ['Text units', 'Tokens are runs of non-whitespace. Sentences split at line breaks and at . ! ? followed by whitespace (approximate; abbreviations such as "Dr." will split). Characters exclude whitespace.'],
       ['Cohen κ and Krippendorff α', 'Computed per code on binary presence per unit. Pooled versions stack every unit × code pair. The label-set version treats the exact set of codes on each unit as one nominal category (∅ when uncoded). With two coders and no missing data, α is nominal Krippendorff α from the coincidence matrix. Values are undefined (—) when there is no variation.'],
       ['ICC', 'Computed per code on the proportion of each unit covered (0–1), using ANOVA mean squares: ICC(2,1) = (MSR − MSE) ÷ (MSR + MSE + 2(MSC − MSE)/n); ICC(3,1) = (MSR − MSE) ÷ (MSR + MSE). At note level, ICC uses span counts per code, which is only informative with many codes or, better, many notes.'],
+      ['Code present (yes / no)', 'For each code, whether each coder applied it anywhere in the note. % agreement, Cohen κ and nominal Krippendorff α are computed over codes. Positive agreement = 2·both yes ÷ (2·both yes + A only + B only); negative agreement is the same for "no". The all-codebook version adds one both-"no" row for every codebook code absent from both files, using codebook.code_count (only when both files share the same codebook hash).'],
       ['Interpretation bands', 'Krippendorff’s conventional thresholds: ≥ .800 reliable, .667–.800 tentative conclusions only, < .667 unreliable. When one category dominates (most text uncoded), κ and α can be low despite high raw agreement, so read them alongside % agree and IoU.']
     ].forEach(([t, dd]) => { dl.appendChild(h('dt', null, t)); dl.appendChild(h('dd', null, dd)); });
     det.appendChild(dl);
@@ -1044,6 +1113,7 @@ const UI = (() => {
       overall: r.overall,
       per_code: r.perCode,
       note_level: r.note,
+      code_presence: r.presence,
       warnings: r.warnings,
       spans: r.spans.map(x => ({
         coder: x.ann.slot, coder_id: state[x.ann.slot].coder, id: x.ann.id, code: x.ann.code,
@@ -1056,12 +1126,13 @@ const UI = (() => {
   function perCodeCsv() {
     const r = state.result;
     const head = ['code', 'label', 'spans_A', 'spans_B', 'chars_A', 'chars_B', 'char_intersection', 'char_union', 'char_iou', 'dice',
-      'span_matched', 'span_precision', 'span_recall', 'span_f1', 'units_A', 'units_B', 'unit_pct_agree', 'cohen_kappa', 'kripp_alpha_nominal', 'icc2_1', 'icc3_1'];
+      'span_matched', 'span_precision', 'span_recall', 'span_f1', 'units_A', 'units_B', 'unit_pct_agree', 'cohen_kappa', 'kripp_alpha_nominal', 'icc2_1', 'icc3_1', 'present_in_note_A', 'present_in_note_B'];
+    const pres = Object.fromEntries(r.presence.rows.map(x => [x.code, x]));
     const rows = r.perCode.map(p => [p.code, p.label, p.spansA, p.spansB, p.charsA, p.charsB, p.interChars, p.unionChars, p.iou, p.dice,
-      p.matched, p.precision, p.recall, p.f1, p.unitsA, p.unitsB, p.pctAgree, p.kappa, p.alpha, p.icc2, p.icc3]);
+      p.matched, p.precision, p.recall, p.f1, p.unitsA, p.unitsB, p.pctAgree, p.kappa, p.alpha, p.icc2, p.icc3, yn(pres[p.code].presentA), yn(pres[p.code].presentB)]);
     const o = r.overall;
     rows.push(['__overall__', 'micro/pooled', o.spansA, o.spansB, '', '', '', '', o.microIoU, '', o.matched, o.spanPrecision, o.spanRecall, o.spanF1,
-      '', '', o.pooledPct, o.pooledKappa, o.pooledAlpha, '', '']);
+      '', '', o.pooledPct, o.pooledKappa, o.pooledAlpha, '', '', '', '']);
     const meta = [['# coder_A', state.A.coder, '# coder_B', state.B.coder, '# unit', r.opts.unit, '# unit_count', r.units.length, '# iou_threshold', r.opts.thr]];
     return toCsv(meta.concat([head], rows));
   }

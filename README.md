@@ -38,7 +38,8 @@ It also flags annotations whose `id` and `created_at` are shared across files, w
 |---|---|
 | Per code | Character IoU, Dice, span precision / recall / F1, Cohen's κ, Krippendorff's α (nominal), ICC(2,1) and ICC(3,1) |
 | Whole note | Micro and macro IoU, code-agnostic IoU, overall span F1, pooled κ and α, label-set α |
-| Note level | Code-presence agreement, ICC and Krippendorff's α (interval) on span counts per code |
+| Note level | ICC and Krippendorff's α (interval) on span counts per code |
+| Code present (yes / no) | Whether each coder used each code anywhere in the note: 2×2 counts, % agreement, positive and negative agreement, Cohen's κ, Krippendorff's α. Computed over codes either coder used, and over the whole codebook (codes neither used count as agreeing "no") |
 
 Text-level statistics use a unit you choose: **tokens** (default), **sentences/lines**, or **characters**. Span matching uses an adjustable IoU threshold (default 0.5). Krippendorff's conventional reliability bands are shown next to each α. The **How these are calculated** section on the page gives exact definitions.
 
@@ -54,7 +55,7 @@ Text-level statistics use a unit you choose: **tokens** (default), **sentences/l
 
 - **Most text is uncoded**, so κ and α can be modest even when raw agreement is 98%. Read them alongside % agreement and IoU.
 - **Note-level ICC and α across codes** rest on very few data points for a single note (one per code). They become meaningful when you aggregate across many notes.
-- **Codes neither coder used** cannot be identified from the exports, so they are not counted as agreements. This makes presence agreement conservative.
+- **Codes neither coder used** are not named in the exports. The yes/no section shows both versions: one over codes used by either coder, and one over the whole codebook (using `codebook.code_count`, only when both files share the same codebook hash), where unused codes count as agreeing "no".
 - **Same idea, different place:** if two coders code the same event in different sections (say, Subjective vs. Assessment & Plan), span metrics count it as a disagreement. The Spans tab labels these *same code elsewhere* so you can adjudicate them.
 
 ## Security and privacy

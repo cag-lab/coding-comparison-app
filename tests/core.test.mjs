@@ -74,6 +74,27 @@ test('kappa, alpha and ICC match reference implementation (tests/reference_check
   close(r.note.countIcc3, 0.5, 'count ICC(3,1)');
 });
 
+test('code present in note (yes/no)', () => {
+  const r = Core.compute(Core.normalize(A, 'A'), Core.normalize(B, 'B'), { unit: 'token', thr: 0.5 });
+  const p = r.presence;
+  // used by either coder: A = [no, yes, yes], B = [yes, yes, yes]
+  assert.deepEqual([p.codesUsed.bothYes, p.codesUsed.aOnly, p.codesUsed.bOnly, p.codesUsed.bothNo], [2, 0, 1, 0]);
+  close(p.codesUsed.pctAgree, 2 / 3, 'pct (used)');
+  close(p.codesUsed.positiveAgreement, 0.8, 'positive agreement');
+  assert.equal(p.codesUsed.kappa, 0);
+  // whole codebook (6 codes): 3 unused codes count as both-no
+  assert.equal(p.unusedCodes, 3);
+  assert.equal(p.codebook.bothNo, 3);
+  close(p.codebook.pctAgree, 5 / 6, 'pct (codebook)');
+  close(p.codebook.kappa, 2 / 3, 'kappa (codebook)');   // po = 5/6, pe = 1/2
+  close(p.codebook.negativeAgreement, 6 / 7, 'negative agreement');
+  // nominal alpha, 12 values: 7 no / 5 yes, 1 disagreeing unit
+  close(p.codebook.alpha, 1 - (2 / 12) / (2 * 7 * 5 / (12 * 11)), 'alpha (codebook)');
+  // mismatched codebooks: whole-codebook view is withheld
+  const B2 = structuredClone(B); B2.codebook.sha256 = 'different';
+  assert.equal(Core.compute(Core.normalize(A, 'A'), Core.normalize(B2, 'B'), { unit: 'token', thr: 0.5 }).presence.codebook, null);
+});
+
 test('textbook statistics', () => {
   const { cohenKappa, alphaNominal, icc } = Core.stats;
   // perfect agreement
