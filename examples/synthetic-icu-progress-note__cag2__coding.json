@@ -1,0 +1,76 @@
+{
+  "schema": "note-coder/v1",
+  "app_version": "1.0.0",
+  "exported_at": "2026-10-24T20:39:28.852Z",
+  "coder_id": "cag2",
+  "note_id": "synthetic-icu-progress-note",
+  "offsets": {
+    "base": 0,
+    "end": "exclusive",
+    "unit": "utf16_code_units",
+    "newlines": "normalized to \\n"
+  },
+  "codebook": {
+    "name": "ICU Decision-Making Codebook",
+    "source_file": "icu-decision-codebook.json",
+    "sha256": "30c7856e6d1e009a65449e9656dffc97ca130fa2496eeaf0e1bf5490a781ff48",
+    "code_count": 6
+  },
+  "note": {
+    "char_count": 4794,
+    "sha256": "b2acc6ab69793c7046f28447df8cae5c04736bb8c2c0755088d935b9dd66a69e",
+    "text": "*** SYNTHETIC NOTE FOR TESTING ONLY - NOT A REAL PATIENT ***\n\nMICU PROGRESS NOTE - Hospital Day 5 / Ventilator Day 4\n\nPatient: SYNTHETIC, Test (ID: TEST-0001)   Age/Sex: 62 M\nAttending: Dr. A. Example   Author: Resident, MICU Team B\n\nSUBJECTIVE / INTERVAL EVENTS:\nRemains intubated on mechanical ventilation for acute hypoxemic respiratory failure secondary to moderate ARDS from right lower lobe community-acquired pneumonia. Overnight, had one episode of ventilator dyssynchrony with breath stacking at 0200, resolved after increasing fentanyl infusion. Propofol was weaned off yesterday afternoon after triglycerides returned at 612 mg/dL, felt to be propofol-related hypertriglyceridemia; transitioned to dexmedetomidine. Passed spontaneous awakening trial this morning. Nods appropriately to questions. When asked, he points to his chest and indicates pain with coughing and suctioning. On SBT he appeared short of breath with accessory muscle use and diaphoresis after 20 minutes, so trial was stopped. Nursing reports he appears very fatigued and has been sleeping poorly due to frequent alarms.\n\nCollateral from sister (by phone): Patient has been staying in his car for the past two months after losing his apartment. Reports he often skips meals because he \"can't afford groceries this month.\" He stopped taking his inhaler and metformin about 6 weeks ago because he ran out and could not get to the pharmacy - no car insurance and bus does not run near where he parks. Missed his last two primary care appointments for the same reason.\n\nOBJECTIVE:\nVitals: T 38.1 C (Tmax 38.6), HR 104, BP 118/66 (MAP 83), RR 24 (set 18), SpO2 93%\nVent: AC/VC, Vt 420 mL (6 mL/kg PBW), RR 18, PEEP 12, FiO2 0.50\nPlateau 27 cm H2O, driving pressure 15. P/F ratio 156 (down from 98 on admission).\nI/O: +1.2 L in 24h, +6.4 L LOS. UOP 0.6 mL/kg/hr.\nSedation: dexmedetomidine 0.7 mcg/kg/hr, fentanyl 75 mcg/hr. RASS -1. CAM-ICU negative. CPOT 4 during suctioning, 1 at rest.\n\nExam:\nGeneral: Intubated, arousable to voice, follows simple commands.\nLungs: Coarse breath sounds bilaterally, crackles right base. Mild accessory muscle use.\nCV: Tachycardic, regular, no murmur. Extremities warm.\nAbd: Soft, mildly distended, hypoactive bowel sounds. Tolerating tube feeds at 40 mL/hr (goal 60).\nExt: 2+ bilateral lower extremity edema.\nSkin: Stage 1 pressure injury over sacrum.\n\nLabs: WBC 15.8 (from 19.2), Hgb 9.6, Plt 188. Na 146, K 3.4, Cr 1.3 (baseline 0.9), HCO3 24. Glucose 212-280 on insulin infusion. Triglycerides 612 -> 398. Lactate 1.4. Procalcitonin 2.1 (from 6.8).\nABG: 7.36 / 46 / 78 on FiO2 0.50.\nMicro: Sputum culture growing Streptococcus pneumoniae, pan-sensitive. Blood cultures no growth x 72h.\nCXR: Persistent bilateral infiltrates, R>L, slightly improved from yesterday.\n\nASSESSMENT & PLAN:\n62M with poorly controlled T2DM and COPD, admitted with severe CAP complicated by moderate ARDS, now ventilator day 4, slowly improving oxygenation.\n\n1. Acute hypoxemic respiratory failure / moderate ARDS\n- Continue lung-protective ventilation, Vt 6 mL/kg PBW, goal plateau <30\n- Wean PEEP by 2 as tolerated to goal FiO2 <0.40\n- Daily SAT/SBT; failed SBT today due to dyspnea and tachypnea - reassess tomorrow\n- Proning not currently indicated (P/F >150)\n\n2. S. pneumoniae pneumonia\n- De-escalate piperacillin-tazobactam to ceftriaxone 2 g daily; stop azithromycin (day 5 complete)\n- Trend fever curve and WBC\n\n3. Sedation / analgesia / delirium prevention\n- Propofol discontinued due to hypertriglyceridemia (likely adverse drug effect); recheck TG in AM\n- Continue dexmedetomidine; titrate fentanyl to CPOT <3\n- Pre-medicate before suctioning for procedural pain\n- Sleep hygiene: cluster care overnight, minimize alarms\n\n4. AKI, likely prerenal / sepsis-associated\n- Net positive 6.4 L; start gentle diuresis with furosemide 20 mg IV once MAP stable\n- Avoid nephrotoxins, renally dose medications\n\n5. T2DM, uncontrolled (A1c 10.8%), with medication non-adherence prior to admission\n- Insulin infusion per ICU protocol, transition to basal-bolus when tube feeds at goal\n\n6. COPD\n- Scheduled ipratropium-albuterol nebs via vent circuit\n- Was not using home inhaler prior to admission\n\n7. Nutrition\n- Advance tube feeds to goal 60 mL/hr; dietitian following\n\n8. Social / disposition\n- Housing instability (living in car), food insecurity, and transportation barriers to care identified - social work consult placed today\n- Will need medication access plan (meds-to-beds, financial assistance) before discharge\n\n9. ICU prophylaxis\n- VTE: enoxaparin 40 mg daily. GI: pantoprazole. HOB >30 degrees, oral care per VAP bundle.\n- Pressure injury: turn q2h, wound care consult.\n\nCode status: Full code (confirmed with sister, who is emergency contact).\nDispo: Remain in MICU.\n\n*** END SYNTHETIC NOTE ***\n"
+  },
+  "annotation_count": 4,
+  "code_counts": {
+    "physiological_success": 1,
+    "physiological_failure": 2,
+    "patient_family_engagement": 1
+  },
+  "annotations": [
+    {
+      "id": "T3",
+      "code": "physiological_success",
+      "label": "Physiological success",
+      "category": "",
+      "start": 726,
+      "end": 774,
+      "text": "Passed spontaneous awakening trial this morning.",
+      "comment": "",
+      "created_at": "2026-10-24T20:36:46.163Z"
+    },
+    {
+      "id": "T7",
+      "code": "physiological_failure",
+      "label": "Physiological failure",
+      "category": "",
+      "start": 3142,
+      "end": 3207,
+      "text": "failed SBT today due to dyspnea and tachypnea - reassess tomorrow",
+      "comment": "",
+      "created_at": "2026-10-24T20:38:59.097Z"
+    },
+    {
+      "id": "T5",
+      "code": "physiological_failure",
+      "label": "Physiological failure",
+      "category": "",
+      "start": 3457,
+      "end": 3553,
+      "text": "Propofol discontinued due to hypertriglyceridemia (likely adverse drug effect); recheck TG in AM",
+      "comment": "",
+      "created_at": "2026-10-24T20:37:09.308Z"
+    },
+    {
+      "id": "T6",
+      "code": "patient_family_engagement",
+      "label": "Patient and family engagement",
+      "category": "",
+      "start": 4692,
+      "end": 4742,
+      "text": "(confirmed with sister, who is emergency contact).",
+      "comment": "",
+      "created_at": "2026-10-24T20:38:51.764Z"
+    }
+  ]
+}

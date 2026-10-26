@@ -1,0 +1,1148 @@
+<!doctype html>
+<!--
+  Coder Agreement Viewer
+  Copyright (C) 2026 cag-lab contributors
+  SPDX-License-Identifier: GPL-3.0-or-later
+  https://github.com/cag-lab/coding-comparison-app
+
+  This file is generated from src/viewer.template.html by scripts/build.py.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="__CSP__">
+<meta name="referrer" content="no-referrer">
+<title>Coder Agreement Viewer</title>
+<style>
+:root{
+  --bg:#f5f6f8;--card:#ffffff;--ink:#1b1f24;--muted:#5b6470;--line:#dde1e6;--soft:#eef0f3;
+  --accent:#2457c5;--ok:#1a7f4b;--info:#2457c5;--warn:#a15c00;--err:#b42318;
+  --agree:#1a7f4b;--aonly:#2457c5;--bonly:#c2410c;--mix:#7c3aed;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111418;--card:#1a1e24;--ink:#e6e9ee;--muted:#9aa3ae;--line:#2c323a;--soft:#232830;
+    --accent:#7aa2ff;--ok:#4cc38a;--info:#7aa2ff;--warn:#f0a43a;--err:#ff6b5e;
+    --agree:#4cc38a;--aonly:#7aa2ff;--bonly:#ff8a4c;--mix:#b794ff;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:20px;margin:0}
+h2{font-size:15px;margin:0 0 10px}
+h3{font-size:14px;margin:0 0 6px}
+h4{font-size:13px;margin:12px 0 4px;color:var(--muted)}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:5px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+select,input[type=number]{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 24px 6px;flex-wrap:wrap}
+.sub{margin:2px 0 0;color:var(--muted)}
+.badge{font-size:12px;color:var(--ok);border:1px solid var(--ok);border-radius:999px;padding:3px 10px;white-space:nowrap}
+main{padding:8px 24px 40px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.hidden{display:none !important}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drop{position:relative;display:flex;flex-direction:column;gap:2px;border:2px dashed var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;min-height:76px}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop-title{font-weight:600}
+.drop-info{color:var(--muted);font-size:13px;word-break:break-all}
+.drop.loaded{border-style:solid}
+.drop.bad{border-color:var(--err)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.hint{color:var(--muted);font-size:12px}
+#checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+#checks li{display:flex;gap:8px;font-size:13px}
+#checks .ic{width:16px;flex:none;font-weight:700;text-align:center}
+.l-ok .ic{color:var(--ok)} .l-info .ic{color:var(--info)} .l-warn .ic{color:var(--warn)} .l-error .ic{color:var(--err)}
+.l-error{color:var(--err)}
+.controls{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px}
+.controls label{display:flex;gap:6px;align-items:center}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px 2px 6px;background:var(--card);cursor:pointer;user-select:none}
+.chip.static{cursor:default}
+.chip .sw{width:12px;height:12px;border-radius:3px;flex:none}
+.chip.off{opacity:.4;text-decoration:line-through}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:12px 0 14px}
+.tabs button{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 14px;color:var(--muted)}
+.tabs button.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.viewgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 290px;gap:12px}
+.viewgrid.merged{grid-template-columns:minmax(0,1fr) 290px}
+.pane{border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;min-width:0}
+.pane-head{padding:8px 12px;border-bottom:1px solid var(--line);font-weight:600;font-size:13px;background:var(--soft);border-radius:8px 8px 0 0}
+.pane-body{white-space:pre-wrap;word-wrap:break-word;font:13px/1.65 var(--mono);padding:12px;height:66vh;overflow:auto}
+.seg{border-radius:2px;cursor:pointer}
+.seg.solo{outline:2px dashed var(--warn);outline-offset:0}
+.seg.sel{outline:2px solid var(--ink) !important}
+.seg.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.m-agree{background:color-mix(in srgb,var(--agree) 28%,transparent)}
+.m-aonly{background:color-mix(in srgb,var(--aonly) 28%,transparent);text-decoration:underline 2px var(--aonly)}
+.m-bonly{background:color-mix(in srgb,var(--bonly) 28%,transparent);text-decoration:underline 2px var(--bonly)}
+.m-mix{background:color-mix(in srgb,var(--mix) 30%,transparent);text-decoration:underline wavy var(--mix)}
+.detail{border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13px;height:calc(66vh + 39px);overflow:auto}
+.detail blockquote{margin:6px 0 4px;padding:6px 10px;border-left:3px solid var(--line);font:12px/1.5 var(--mono);white-space:pre-wrap;color:var(--muted)}
+.ann{border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin:4px 0}
+.ann .meta{color:var(--muted);font-size:12px}
+.muted{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:18px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted)}
+.band{font-size:11px;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;font-weight:500}
+.band.good{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.band.mid{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.band.bad{background:color-mix(in srgb,var(--err) 16%,transparent);color:var(--err)}
+.tablewrap{overflow-x:auto;margin-bottom:18px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;background:var(--soft)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--soft)}
+.excerpt{font-family:var(--mono);font-size:12px;max-width:420px}
+.st{font-size:11px;border-radius:999px;padding:1px 8px;white-space:nowrap;font-weight:600}
+.st-matched{color:var(--agree);background:color-mix(in srgb,var(--agree) 15%,transparent)}
+.st-partial{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.st-diffcode{color:var(--mix);background:color-mix(in srgb,var(--mix) 15%,transparent)}
+.st-elsewhere{color:var(--aonly);background:color-mix(in srgb,var(--aonly) 15%,transparent)}
+.st-none{color:var(--err);background:color-mix(in srgb,var(--err) 13%,transparent)}
+.warnbox{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;font-size:13px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
+details.method{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+details.method summary{cursor:pointer;color:var(--ink);font-weight:600}
+details.method dt{color:var(--ink);font-weight:600;margin-top:8px}
+details.method dd{margin:2px 0 0 0}
+.exports{display:grid;gap:10px;max-width:640px}
+.exports .rowx{display:flex;gap:12px;align-items:center}
+.exports .rowx span{color:var(--muted);font-size:13px}
+@media (max-width:1100px){.viewgrid,.viewgrid.merged{grid-template-columns:1fr}.detail{height:auto;max-height:50vh}.pane-body{height:55vh}}
+@media (max-width:640px){.drops{grid-template-columns:1fr}.top,main{padding-left:16px;padding-right:16px}}
+@media print{.top .badge,#loadCard,.controls,.legend,.tabs,#tab-view,#tab-spans,#tab-export{display:none !important}#tab-stats{display:block !important}.card{border:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Coder Agreement Viewer</h1>
+    <p class="sub">Compare two <code>note-coder/v1</code> exports side by side and measure inter-coder agreement.</p>
+  </div>
+  <div class="badge" title="This page makes no network requests. A Content-Security-Policy blocks all outbound connections, and nothing is saved to browser storage.">● Offline · files never leave this computer</div>
+</header>
+<main>
+  <section class="card" id="loadCard">
+    <div class="drops">
+      <label class="drop" id="dropA">
+        <input type="file" id="fileA" accept=".json,application/json" multiple>
+        <span class="drop-title">Coder A</span>
+        <span class="drop-info" id="infoA">Drop a JSON export here, or click to choose</span>
+      </label>
+      <label class="drop" id="dropB">
+        <input type="file" id="fileB" accept=".json,application/json" multiple>
+        <span class="drop-title">Coder B</span>
+        <span class="drop-info" id="infoB">Drop a JSON export here, or click to choose</span>
+      </label>
+    </div>
+    <div class="row">
+      <button id="swapBtn" type="button">Swap A ↔ B</button>
+      <button id="clearBtn" type="button">Clear</button>
+      <span class="hint">You can select or drop both files at once; the first goes to A, the second to B.</span>
+    </div>
+  </section>
+
+  <section class="card hidden" id="validCard">
+    <h2>Validation</h2>
+    <ul id="checks"></ul>
+  </section>
+
+  <section class="card hidden" id="mainCard">
+    <div class="controls">
+      <label>Text unit
+        <select id="unitSel">
+          <option value="token">Tokens (words)</option>
+          <option value="sentence">Sentences / lines</option>
+          <option value="char">Characters</option>
+        </select>
+      </label>
+      <label>Span match IoU ≥
+        <input type="number" id="thrInput" min="0" max="1" step="0.05" value="0.5">
+      </label>
+      <label>View
+        <select id="viewSel">
+          <option value="side">Side by side</option>
+          <option value="merged">Merged diff</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="syncChk" checked> Sync scrolling</label>
+    </div>
+    <div class="legend" id="legend"></div>
+    <nav class="tabs" id="tabs">
+      <button type="button" data-tab="view" class="active">Text</button>
+      <button type="button" data-tab="stats">Statistics</button>
+      <button type="button" data-tab="spans">Spans</button>
+      <button type="button" data-tab="export">Export</button>
+    </nav>
+
+    <div id="tab-view" class="tabpane">
+      <div class="viewgrid" id="viewgrid">
+        <div class="pane" id="paneA"><div class="pane-head" id="headA">Coder A</div><div class="pane-body" id="bodyA"></div></div>
+        <div class="pane" id="paneB"><div class="pane-head" id="headB">Coder B</div><div class="pane-body" id="bodyB"></div></div>
+        <div class="pane hidden" id="paneM"><div class="pane-head" id="headM">Merged</div><div class="pane-body" id="bodyM"></div></div>
+        <aside class="detail" id="detail"><p class="muted">Click a highlighted passage to see what each coder applied there.</p></aside>
+      </div>
+    </div>
+    <div id="tab-stats" class="tabpane hidden"></div>
+    <div id="tab-spans" class="tabpane hidden"></div>
+    <div id="tab-export" class="tabpane hidden"></div>
+  </section>
+</main>
+<script>
+'use strict';
+const APP = { name: 'Coder Agreement Viewer', version: '0.1.0' };
+const PALETTE = ['#e0a100', '#d9534f', '#2e9e5b', '#3b6fd8', '#9b59b6', '#14a3b8', '#e67e22', '#8a8f98', '#c2185b', '#6b8e23'];
+
+/* ============================== Core (pure, no DOM) ============================== */
+const Core = (() => {
+  const MAX_BYTES = 25 * 1024 * 1024;
+  const WS = /\s/;
+
+  function wsMask(text) {
+    const w = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) w[i] = WS.test(text[i]) ? 1 : 0;
+    return w;
+  }
+
+  /* ---------- validation ---------- */
+  function validateFile(d, label) {
+    const checks = [];
+    const add = (level, msg) => checks.push({ level, msg: label + ': ' + msg });
+    if (!d || typeof d !== 'object' || Array.isArray(d)) { add('error', 'top level is not a JSON object'); return checks; }
+    if (d.schema !== 'note-coder/v1') add('warn', 'schema is ' + JSON.stringify(d.schema === undefined ? null : d.schema) + ', expected "note-coder/v1"');
+    if (!d.note || typeof d.note !== 'object' || typeof d.note.text !== 'string') { add('error', 'missing note.text'); return checks; }
+    const text = d.note.text, N = text.length;
+    if (d.note.char_count != null && d.note.char_count !== N) add('error', 'note.char_count is ' + d.note.char_count + ' but the text has ' + N + ' UTF-16 units');
+    if (text.indexOf('\r') !== -1) add('warn', 'note text contains \\r characters; offsets are assumed to use \\n newlines');
+    const o = (d.offsets && typeof d.offsets === 'object') ? d.offsets : {};
+    if (o.unit != null && o.unit !== 'utf16_code_units') add('error', 'offset unit ' + JSON.stringify(o.unit) + ' is not supported (expected utf16_code_units)');
+    if (o.end != null && o.end !== 'exclusive') add('error', 'offset end ' + JSON.stringify(o.end) + ' is not supported (expected exclusive)');
+    if (o.base != null && o.base !== 0) add('error', 'offset base ' + o.base + ' is not supported (expected 0)');
+    if (!Array.isArray(d.annotations)) { add('error', 'annotations is not an array'); return checks; }
+    let bad = 0, mism = 0, dup = 0;
+    const ids = new Set(), counts = {};
+    for (const a of d.annotations) {
+      const ok = a && typeof a === 'object' && Number.isInteger(a.start) && Number.isInteger(a.end) &&
+        a.start >= 0 && a.end <= N && a.start < a.end && typeof a.code === 'string' && a.code;
+      if (!ok) { bad++; continue; }
+      counts[a.code] = (counts[a.code] || 0) + 1;
+      if (typeof a.text === 'string' && text.slice(a.start, a.end) !== a.text) mism++;
+      if (a.id != null) { const k = String(a.id); if (ids.has(k)) dup++; ids.add(k); }
+    }
+    const usable = d.annotations.length - bad;
+    if (bad) add('warn', bad + ' annotation(s) have invalid offsets or no code and will be ignored');
+    if (mism) add('warn', mism + ' annotation(s) store text that does not match the note at their offsets');
+    if (dup) add('warn', dup + ' duplicate annotation id(s) within this file');
+    if (d.annotation_count != null && d.annotation_count !== d.annotations.length) add('warn', 'annotation_count says ' + d.annotation_count + ' but ' + d.annotations.length + ' annotations are present');
+    if (d.code_counts && typeof d.code_counts === 'object') {
+      const keys = new Set(Object.keys(d.code_counts).concat(Object.keys(counts)));
+      let off = 0; keys.forEach(k => { if ((d.code_counts[k] || 0) !== (counts[k] || 0)) off++; });
+      if (off) add('warn', 'code_counts does not match the annotations');
+    }
+    if (!bad && !mism) add('ok', usable + ' annotation(s); all offsets in range and stored text matches the note');
+    return checks;
+  }
+
+  function crossValidate(dA, dB) {
+    const checks = [];
+    const add = (level, msg) => checks.push({ level, msg });
+    if (dA.note.text !== dB.note.text) {
+      add('error', 'The two files contain different note text, so their offsets cannot be compared. Make sure both coders coded the same version of the note.');
+    } else add('ok', 'Both files contain identical note text (' + dA.note.text.length + ' characters)');
+    if (dA.note_id !== dB.note_id) add('warn', 'note_id differs: ' + JSON.stringify(dA.note_id) + ' vs ' + JSON.stringify(dB.note_id));
+    const ca = dA.codebook && dA.codebook.sha256, cb = dB.codebook && dB.codebook.sha256;
+    if (ca && cb) {
+      if (ca === cb) add('ok', 'Same codebook in both files (sha256 match)');
+      else add('warn', 'Codebook hashes differ, so the codes may not mean the same thing in both files');
+    } else add('warn', 'Codebook hash missing from one or both files; cannot confirm the same codebook was used');
+    if (dA.coder_id != null && dA.coder_id === dB.coder_id) add('warn', 'Both files have the same coder_id (' + JSON.stringify(dA.coder_id) + ')');
+    const byId = new Map();
+    for (const a of dA.annotations) if (a && a.id != null) byId.set(String(a.id), a);
+    let copied = 0;
+    for (const b of dB.annotations) {
+      if (!b || b.id == null) continue;
+      const a = byId.get(String(b.id));
+      if (a && a.created_at && a.created_at === b.created_at) copied++;
+    }
+    if (copied) add('info', copied + ' annotation(s) share both id and created_at across files, so one file probably started as a copy of the other. Matching uses offsets and codes, never ids.');
+    return checks;
+  }
+
+  async function sha256Hex(str) {
+    try {
+      if (!(globalThis.crypto && crypto.subtle)) return null;
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) { return null; }
+  }
+
+  function normalize(d, slot) {
+    const text = d.note.text, N = text.length, anns = [];
+    d.annotations.forEach((a, i) => {
+      if (!a || typeof a !== 'object') return;
+      if (!Number.isInteger(a.start) || !Number.isInteger(a.end) || a.start < 0 || a.end > N || a.start >= a.end) return;
+      if (typeof a.code !== 'string' || !a.code) return;
+      anns.push({
+        key: slot + ':' + i, slot,
+        id: a.id != null ? String(a.id) : '#' + (i + 1),
+        code: a.code,
+        label: (typeof a.label === 'string' && a.label) ? a.label : a.code,
+        start: a.start, end: a.end,
+        comment: typeof a.comment === 'string' ? a.comment : '',
+        category: typeof a.category === 'string' ? a.category : ''
+      });
+    });
+    anns.sort((x, y) => x.start - y.start || x.end - y.end);
+    return {
+      slot, text, anns,
+      coder: d.coder_id != null ? String(d.coder_id) : slot,
+      meta: {
+        coder_id: d.coder_id ?? null, note_id: d.note_id ?? null, exported_at: d.exported_at ?? null,
+        note_sha256: (d.note && d.note.sha256) || null,
+        codebook_name: (d.codebook && d.codebook.name) || null,
+        codebook_sha256: (d.codebook && d.codebook.sha256) || null,
+        codebook_code_count: (d.codebook && d.codebook.code_count) ?? null,
+        annotation_count: anns.length
+      }
+    };
+  }
+
+  /* ---------- units ---------- */
+  function buildUnits(text, mode, ws) {
+    const U = [];
+    if (mode === 'char') {
+      for (let i = 0; i < text.length; i++) if (!ws[i]) U.push([i, i + 1]);
+      return U;
+    }
+    if (mode === 'token') {
+      const re = /\S+/g; let m;
+      while ((m = re.exec(text)) !== null) U.push([m.index, m.index + m[0].length]);
+      return U;
+    }
+    const push = (s, e) => { while (s < e && ws[s]) s++; while (e > s && ws[e - 1]) e--; if (e > s) U.push([s, e]); };
+    let ls = 0;
+    for (const line of text.split('\n')) {
+      const re = /[.!?]+["')\]]*(?=\s)/g; let s = 0, m;
+      while ((m = re.exec(line)) !== null) { const e = m.index + m[0].length; push(ls + s, ls + e); s = e; }
+      push(ls + s, ls + line.length);
+      ls += line.length + 1;
+    }
+    return U;
+  }
+
+  /* ---------- statistics ---------- */
+  const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+
+  function pctAgree(x, y) {
+    if (!x.length) return null;
+    let a = 0; for (let i = 0; i < x.length; i++) if (x[i] === y[i]) a++;
+    return a / x.length;
+  }
+
+  // Cohen's kappa for two raters, any nominal categories
+  function cohenKappa(x, y) {
+    const n = x.length; if (!n) return null;
+    const cx = new Map(), cy = new Map(); let agree = 0;
+    for (let i = 0; i < n; i++) {
+      cx.set(x[i], (cx.get(x[i]) || 0) + 1); cy.set(y[i], (cy.get(y[i]) || 0) + 1);
+      if (x[i] === y[i]) agree++;
+    }
+    const po = agree / n; let pe = 0;
+    cx.forEach((v, k) => { pe += (v / n) * ((cy.get(k) || 0) / n); });
+    if (pe >= 1) return null;
+    return (po - pe) / (1 - pe);
+  }
+
+  // Krippendorff's alpha, nominal, 2 coders, no missing data
+  function alphaNominal(x, y) {
+    const N = x.length; if (!N) return null;
+    const n = 2 * N; const counts = new Map(); let dis = 0;
+    for (let i = 0; i < N; i++) {
+      counts.set(x[i], (counts.get(x[i]) || 0) + 1);
+      counts.set(y[i], (counts.get(y[i]) || 0) + 1);
+      if (x[i] !== y[i]) dis += 2;
+    }
+    let sq = 0; counts.forEach(v => { sq += v * v; });
+    const De = (n * n - sq) / (n * (n - 1));
+    if (De === 0) return null;
+    return 1 - (dis / n) / De;
+  }
+
+  // Krippendorff's alpha, interval, 2 coders, no missing data
+  function alphaInterval(x, y) {
+    const N = x.length; if (N < 1) return null;
+    const n = 2 * N; let doSum = 0, s = 0, s2 = 0;
+    for (let i = 0; i < N; i++) {
+      doSum += 2 * (x[i] - y[i]) ** 2;
+      s += x[i] + y[i]; s2 += x[i] * x[i] + y[i] * y[i];
+    }
+    const De = (2 * n * s2 - 2 * s * s) / (n * (n - 1));
+    if (!(De > 1e-12)) return null;
+    return 1 - (doSum / n) / De;
+  }
+
+  // ICC for n subjects x 2 raters. icc2 = ICC(2,1) absolute agreement; icc3 = ICC(3,1) consistency
+  function icc(x, y) {
+    const n = x.length, k = 2;
+    if (n < 2) return { icc2: null, icc3: null, n };
+    let gm = 0; for (let i = 0; i < n; i++) gm += x[i] + y[i]; gm /= n * k;
+    let mx = 0, my = 0; for (let i = 0; i < n; i++) { mx += x[i]; my += y[i]; } mx /= n; my /= n;
+    let SSR = 0, SST = 0;
+    for (let i = 0; i < n; i++) {
+      const r = (x[i] + y[i]) / 2; SSR += k * (r - gm) ** 2;
+      SST += (x[i] - gm) ** 2 + (y[i] - gm) ** 2;
+    }
+    const SSC = n * ((mx - gm) ** 2 + (my - gm) ** 2);
+    const SSE = Math.max(0, SST - SSR - SSC);
+    const MSR = SSR / (n - 1), MSC = SSC / (k - 1), MSE = SSE / ((n - 1) * (k - 1));
+    if (SST < 1e-12) return { icc2: null, icc3: null, n };
+    const d2 = MSR + (k - 1) * MSE + k * (MSC - MSE) / n;
+    const d3 = MSR + (k - 1) * MSE;
+    const clean = v => Math.abs(v) < 1e-12 ? 0 : v;
+    return { icc2: d2 > 1e-12 ? clean((MSR - MSE) / d2) : null, icc3: d3 > 1e-12 ? clean((MSR - MSE) / d3) : null, n };
+  }
+
+  function spanIoU(a, b) {
+    const inter = Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start));
+    return inter / ((a.end - a.start) + (b.end - b.start) - inter);
+  }
+
+  // one-to-one greedy matching of same-code spans by descending IoU
+  function matchSpans(A, B, thr) {
+    const cand = [];
+    for (const a of A) for (const b of B) {
+      if (a.code !== b.code) continue;
+      const v = spanIoU(a, b);
+      if (v > 0 && v >= thr) cand.push([v, a, b]);
+    }
+    cand.sort((p, q) => q[0] - p[0] || p[1].start - q[1].start);
+    const m = new Map();
+    for (const [v, a, b] of cand) {
+      if (m.has(a.key) || m.has(b.key)) continue;
+      m.set(a.key, { other: b, iou: v }); m.set(b.key, { other: a, iou: v });
+    }
+    return m;
+  }
+
+  function spanStatus(x, others, match) {
+    const p = match.get(x.key);
+    if (p) return { status: 'matched', other: p.other, iou: p.iou };
+    let best = null, bi = 0;
+    for (const o of others) if (o.code === x.code) { const v = spanIoU(x, o); if (v > bi) { bi = v; best = o; } }
+    if (best) return { status: 'partial', other: best, iou: bi };
+    let diff = null, di = 0;
+    for (const o of others) if (o.code !== x.code) { const v = spanIoU(x, o); if (v > di) { di = v; diff = o; } }
+    if (diff) return { status: 'diffcode', other: diff, iou: di };
+    let near = null, dist = Infinity;
+    for (const o of others) if (o.code === x.code) {
+      const d = Math.max(o.start - x.end, x.start - o.end);
+      if (d < dist) { dist = d; near = o; }
+    }
+    if (near) return { status: 'elsewhere', other: near, iou: 0 };
+    return { status: 'none', other: null, iou: null };
+  }
+
+  function compute(A, B, opts) {
+    const text = A.text, N = text.length, ws = wsMask(text);
+    const all = A.anns.concat(B.anns);
+    const codes = Array.from(new Set(all.map(a => a.code))).sort();
+    const labels = {}; for (const a of all) if (!labels[a.code]) labels[a.code] = a.label;
+
+    const mk = (anns) => {
+      const m = {}; for (const c of codes) m[c] = new Uint8Array(N);
+      for (const a of anns) { const arr = m[a.code]; for (let i = a.start; i < a.end; i++) arr[i] = 1; }
+      return m;
+    };
+    const mA = mk(A.anns), mB = mk(B.anns);
+
+    const units = buildUnits(text, opts.unit, ws);
+    const P0 = new Uint32Array(N + 1);
+    for (let i = 0; i < N; i++) P0[i + 1] = P0[i] + (ws[i] ? 0 : 1);
+    const coverage = (mask) => {
+      const p = new Uint32Array(N + 1);
+      for (let i = 0; i < N; i++) p[i + 1] = p[i] + (mask[i] && !ws[i] ? 1 : 0);
+      return units.map(([s, e]) => { const d = P0[e] - P0[s]; return d ? (p[e] - p[s]) / d : 0; });
+    };
+
+    const match = matchSpans(A.anns, B.anns, opts.thr);
+    const covA = {}, covB = {};
+    const pooledX = [], pooledY = [];
+    let sInter = 0, sUni = 0, mTot = 0;
+    const perCode = codes.map(code => {
+      const a = mA[code], b = mB[code];
+      let ac = 0, bc = 0, inter = 0;
+      for (let i = 0; i < N; i++) { ac += a[i]; bc += b[i]; inter += a[i] & b[i]; }
+      const uni = ac + bc - inter;
+      sInter += inter; sUni += uni;
+      const sa = A.anns.filter(x => x.code === code), sb = B.anns.filter(x => x.code === code);
+      const m = sa.filter(x => match.has(x.key)).length; mTot += m;
+      const ca = coverage(a), cb = coverage(b); covA[code] = ca; covB[code] = cb;
+      const pa = ca.map(v => v > 0 ? 1 : 0), pb = cb.map(v => v > 0 ? 1 : 0);
+      for (let i = 0; i < pa.length; i++) { pooledX.push(pa[i]); pooledY.push(pb[i]); }
+      const ic = icc(ca, cb);
+      return {
+        code, label: labels[code],
+        spansA: sa.length, spansB: sb.length, charsA: ac, charsB: bc, interChars: inter, unionChars: uni,
+        iou: uni ? inter / uni : null,
+        dice: (ac + bc) ? 2 * inter / (ac + bc) : null,
+        matched: m,
+        precision: sb.length ? m / sb.length : null,
+        recall: sa.length ? m / sa.length : null,
+        f1: (sa.length + sb.length) ? 2 * m / (sa.length + sb.length) : null,
+        unitsA: pa.reduce((s, v) => s + v, 0), unitsB: pb.reduce((s, v) => s + v, 0),
+        pctAgree: pctAgree(pa, pb), kappa: cohenKappa(pa, pb), alpha: alphaNominal(pa, pb),
+        icc2: ic.icc2, icc3: ic.icc3
+      };
+    });
+
+    // code-agnostic selection overlap
+    let anyA = 0, anyB = 0, anyI = 0;
+    for (let i = 0; i < N; i++) {
+      let x = 0, y = 0;
+      for (const c of codes) { if (mA[c][i]) x = 1; if (mB[c][i]) y = 1; }
+      anyA += x; anyB += y; anyI += x & y;
+    }
+    const anyU = anyA + anyB - anyI;
+
+    // exact label set per unit
+    const setA = units.map((_, u) => codes.filter(c => covA[c][u] > 0).join('|') || '∅');
+    const setB = units.map((_, u) => codes.filter(c => covB[c][u] > 0).join('|') || '∅');
+
+    const nA = A.anns.length, nB = B.anns.length;
+    const iouVals = perCode.map(r => r.iou).filter(v => v != null);
+    const overall = {
+      codes: codes.length, units: units.length,
+      microIoU: sUni ? sInter / sUni : null,
+      macroIoU: mean(iouVals),
+      anyIoU: anyU ? anyI / anyU : null,
+      spansA: nA, spansB: nB, matched: mTot,
+      spanPrecision: nB ? mTot / nB : null,
+      spanRecall: nA ? mTot / nA : null,
+      spanF1: (nA + nB) ? 2 * mTot / (nA + nB) : null,
+      pooledPct: pctAgree(pooledX, pooledY),
+      pooledKappa: cohenKappa(pooledX, pooledY),
+      pooledAlpha: alphaNominal(pooledX, pooledY),
+      labelPct: pctAgree(setA, setB),
+      labelKappa: cohenKappa(setA, setB),
+      labelAlpha: alphaNominal(setA, setB)
+    };
+
+    // note level: per-code counts across the codes used by either coder
+    const cntA = codes.map(c => A.anns.filter(x => x.code === c).length);
+    const cntB = codes.map(c => B.anns.filter(x => x.code === c).length);
+    const prA = cntA.map(v => v > 0 ? 1 : 0), prB = cntB.map(v => v > 0 ? 1 : 0);
+    const ic = icc(cntA, cntB);
+    const note = {
+      rows: codes.map((c, i) => ({ code: c, label: labels[c], countA: cntA[i], countB: cntB[i], presentA: !!prA[i], presentB: !!prB[i] })),
+      presencePct: pctAgree(prA, prB),
+      presenceKappa: cohenKappa(prA, prB),
+      countAlpha: alphaInterval(cntA, cntB),
+      countIcc2: ic.icc2, countIcc3: ic.icc3,
+      n: codes.length,
+      codebookCount: A.meta.codebook_code_count
+    };
+
+    // segments for rendering
+    const bset = new Set([0, N]);
+    for (const a of all) { bset.add(a.start); bset.add(a.end); }
+    const pts = Array.from(bset).sort((p, q) => p - q);
+    const segs = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const s = pts[i], e = pts[i + 1];
+      segs.push({ s, e, a: codes.filter(c => mA[c][s]), b: codes.filter(c => mB[c][s]) });
+    }
+
+    const spans = A.anns.map(x => Object.assign({ ann: x }, spanStatus(x, B.anns, match)))
+      .concat(B.anns.map(x => Object.assign({ ann: x }, spanStatus(x, A.anns, match))))
+      .sort((p, q) => p.ann.start - q.ann.start || (p.ann.slot < q.ann.slot ? -1 : 1));
+
+    const warnings = [];
+    if (units.length < 10) warnings.push('Fewer than 10 text units; text-level kappa, alpha and ICC are unstable.');
+    if (codes.length < 5) warnings.push('Only ' + codes.length + ' code(s) in use, so note-level statistics across codes rest on very few data points. Note-level ICC becomes meaningful when you compare many notes.');
+
+    return { text, codes, labels, units, perCode, overall, note, segs, spans, warnings, opts: Object.assign({}, opts) };
+  }
+
+  return { MAX_BYTES, validateFile, crossValidate, sha256Hex, normalize, buildUnits, compute,
+    stats: { cohenKappa, alphaNominal, alphaInterval, icc, pctAgree, spanIoU, matchSpans } };
+})();
+
+/* ============================== UI ============================== */
+const UI = (() => {
+  const $ = id => document.getElementById(id);
+  const h = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  const UNIT_NAMES = { token: ['token', 'tokens'], sentence: ['sentence', 'sentences'], char: ['character', 'characters'] };
+  const STATUS = {
+    matched: ['Matched', 'Same code, overlap at or above the IoU threshold'],
+    partial: ['Partial overlap', 'Same code overlaps, but below the IoU threshold or already matched'],
+    diffcode: ['Different code', 'The other coder coded overlapping text with a different code'],
+    elsewhere: ['Same code elsewhere', 'The other coder used this code only on non-overlapping text'],
+    none: ['No counterpart', 'The other coder did not use this code']
+  };
+
+  const state = {
+    files: { A: null, B: null },
+    opts: { unit: 'token', thr: 0.5, view: 'side', sync: true },
+    hidden: new Set(), colors: {}, checks: [], result: null, A: null, B: null,
+    segEls: { A: [], B: [], M: [] }, sel: null, tab: 'view'
+  };
+
+  const fmt = (v, d = 3) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d);
+  const pct = v => (v == null || !isFinite(v)) ? '—' : (v * 100).toFixed(1) + '%';
+  const excerpt = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+
+  function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function band(v) {
+    if (v == null || !isFinite(v)) return null;
+    if (v >= 0.8) return ['good', 'reliable (≥ .800)'];
+    if (v >= 0.667) return ['mid', 'tentative (.667–.800)'];
+    return ['bad', 'unreliable (< .667)'];
+  }
+  function bandEl(v) {
+    const b = band(v); if (!b) return null;
+    return h('span', 'band ' + b[0], b[1]);
+  }
+
+  /* ---------- loading ---------- */
+  async function loadFile(slot, file) {
+    if (file.size > Core.MAX_BYTES) {
+      state.files[slot] = { name: file.name, error: 'file is larger than ' + (Core.MAX_BYTES / 1048576) + ' MB' };
+      return;
+    }
+    let raw;
+    try { raw = await file.text(); }
+    catch (e) { state.files[slot] = { name: file.name, error: 'could not read the file' }; return; }
+    try { state.files[slot] = { name: file.name, data: JSON.parse(raw) }; }
+    catch (e) { state.files[slot] = { name: file.name, error: 'not valid JSON (' + e.message + ')' }; }
+  }
+  async function handleFiles(list, slot) {
+    const fs = Array.from(list || []);
+    if (!fs.length) return;
+    if (fs.length >= 2) { await loadFile('A', fs[0]); await loadFile('B', fs[1]); }
+    else await loadFile(slot, fs[0]);
+    refresh();
+  }
+
+  function slotLabel(slot) {
+    const f = state.files[slot];
+    const id = f && f.data && f.data.coder_id != null ? String(f.data.coder_id) : (f ? f.name : '');
+    return 'Coder ' + slot + ' (' + id + ')';
+  }
+
+  function renderDropInfo() {
+    for (const slot of ['A', 'B']) {
+      const f = state.files[slot], drop = $('drop' + slot), info = $('info' + slot);
+      drop.classList.toggle('loaded', !!(f && f.data));
+      drop.classList.toggle('bad', !!(f && f.error));
+      if (!f) { info.textContent = 'Drop a JSON export here, or click to choose'; continue; }
+      if (f.error) { info.textContent = f.name + ': ' + f.error; continue; }
+      const d = f.data;
+      const n = Array.isArray(d.annotations) ? d.annotations.length : '?';
+      info.textContent = f.name + ' · coder ' + (d.coder_id ?? '?') + ' · ' + n + ' annotation(s)';
+    }
+  }
+
+  let refreshTok = 0;
+  async function refresh() {
+    const tok = ++refreshTok;
+    renderDropInfo();
+    const checks = [];
+    let fileOk = true;
+    for (const slot of ['A', 'B']) {
+      const f = state.files[slot];
+      if (!f) continue;
+      if (f.error) { checks.push({ level: 'error', msg: slotLabel(slot) + ': ' + f.error }); fileOk = false; continue; }
+      const c = Core.validateFile(f.data, slotLabel(slot));
+      if (c.some(x => x.level === 'error')) fileOk = false;
+      checks.push(...c);
+    }
+    const fa = state.files.A, fb = state.files.B;
+    const both = !!(fa && fa.data && fb && fb.data);
+    if (both && fileOk) checks.push(...Core.crossValidate(fa.data, fb.data));
+    if (fileOk) {
+      for (const slot of ['A', 'B']) {
+        const f = state.files[slot];
+        if (!f || !f.data || typeof f.data.note.sha256 !== 'string') continue;
+        const hx = await Core.sha256Hex(f.data.note.text);
+        if (tok !== refreshTok) return;
+        if (hx === null) checks.push({ level: 'info', msg: slotLabel(slot) + ': note hash not verified (Web Crypto unavailable in this browser context)' });
+        else if (hx === f.data.note.sha256.toLowerCase()) checks.push({ level: 'ok', msg: slotLabel(slot) + ': note.sha256 matches the note text' });
+        else checks.push({ level: 'warn', msg: slotLabel(slot) + ': note.sha256 does not match the SHA-256 of the note text (UTF-8)' });
+      }
+    }
+    state.checks = checks;
+    renderChecks();
+    const blocking = checks.some(c => c.level === 'error');
+    if (both && !blocking) {
+      state.A = Core.normalize(fa.data, 'A');
+      state.B = Core.normalize(fb.data, 'B');
+      recompute();
+      $('mainCard').classList.remove('hidden');
+    } else {
+      state.result = null;
+      $('mainCard').classList.add('hidden');
+    }
+  }
+
+  function renderChecks() {
+    const ul = $('checks'); ul.replaceChildren();
+    $('validCard').classList.toggle('hidden', !state.checks.length);
+    const icons = { ok: '✓', info: 'i', warn: '!', error: '✕' };
+    const order = { error: 0, warn: 1, info: 2, ok: 3 };
+    state.checks.slice().sort((a, b) => order[a.level] - order[b.level]).forEach(c => {
+      const li = h('li', 'l-' + c.level);
+      li.appendChild(h('span', 'ic', icons[c.level]));
+      li.appendChild(h('span', null, c.msg));
+      ul.appendChild(li);
+    });
+  }
+
+  function recompute() {
+    state.result = Core.compute(state.A, state.B, state.opts);
+    state.colors = {};
+    state.result.codes.forEach((c, i) => { state.colors[c] = PALETTE[i % PALETTE.length]; });
+    for (const c of Array.from(state.hidden)) if (!state.colors[c]) state.hidden.delete(c);
+    state.sel = null;
+    renderLegend(); renderView(); renderStats(); renderSpans(); renderExport();
+    resetDetail();
+  }
+
+  /* ---------- legend & views ---------- */
+  function paint(el, codes) {
+    if (codes.length === 1) { el.style.backgroundColor = hexA(state.colors[codes[0]], 0.32); return; }
+    const w = 6, stops = [];
+    codes.forEach((c, i) => { stops.push(hexA(state.colors[c], 0.45) + ' ' + (i * w) + 'px ' + ((i + 1) * w) + 'px'); });
+    el.style.backgroundImage = 'repeating-linear-gradient(135deg,' + stops.join(',') + ')';
+  }
+
+  function renderLegend() {
+    const lg = $('legend'); lg.replaceChildren();
+    if (state.opts.view === 'side') {
+      for (const c of state.result.codes) {
+        const chip = h('span', 'chip' + (state.hidden.has(c) ? ' off' : ''));
+        chip.title = 'Click to show or hide this code in the text view (statistics are unaffected)';
+        const sw = h('span', 'sw'); sw.style.backgroundColor = state.colors[c];
+        chip.appendChild(sw); chip.appendChild(document.createTextNode(state.result.labels[c]));
+        chip.addEventListener('click', () => {
+          if (state.hidden.has(c)) state.hidden.delete(c); else state.hidden.add(c);
+          renderLegend(); renderView();
+        });
+        lg.appendChild(chip);
+      }
+      const k = h('span', 'chip static'); const sw = h('span', 'sw'); sw.style.outline = '2px dashed var(--warn)';
+      k.appendChild(sw); k.appendChild(document.createTextNode('dashed = the other coder did not apply this code here'));
+      lg.appendChild(k);
+    } else {
+      [['m-agree', 'Both coders, same code(s)'], ['m-aonly', 'Only ' + state.A.coder + ' (A)'], ['m-bonly', 'Only ' + state.B.coder + ' (B)'], ['m-mix', 'Both coded, codes differ']].forEach(([cls, t]) => {
+        const k = h('span', 'chip static'); k.appendChild(h('span', 'sw ' + cls)); k.appendChild(document.createTextNode(t)); lg.appendChild(k);
+      });
+    }
+  }
+
+  const vis = codes => codes.filter(c => !state.hidden.has(c));
+
+  function renderView() {
+    const side = state.opts.view === 'side';
+    $('paneA').classList.toggle('hidden', !side);
+    $('paneB').classList.toggle('hidden', !side);
+    $('paneM').classList.toggle('hidden', side);
+    $('viewgrid').classList.toggle('merged', !side);
+    if (side) renderSide(); else renderMerged();
+  }
+
+  function renderSide() {
+    const r = state.result;
+    for (const slot of ['A', 'B']) {
+      const body = $('body' + slot); body.replaceChildren();
+      const other = slot === 'A' ? 'B' : 'A';
+      $('head' + slot).textContent = 'Coder ' + slot + ' · ' + state[slot].coder + ' · ' + state[slot].anns.length + ' span(s)';
+      const frag = document.createDocumentFragment(), els = [];
+      r.segs.forEach((sg, i) => {
+        const txt = r.text.slice(sg.s, sg.e);
+        const mine = vis(slot === 'A' ? sg.a : sg.b), theirs = slot === 'A' ? sg.b : sg.a;
+        if (!mine.length) { frag.appendChild(document.createTextNode(txt)); els.push(null); return; }
+        const sp = h('span', 'seg', txt);
+        sp.dataset.i = String(i);
+        paint(sp, mine);
+        sp.classList.add(mine.some(c => !theirs.includes(c)) ? 'solo' : 'shared');
+        sp.title = state[slot].coder + ': ' + mine.map(c => r.labels[c]).join(', ') + '\n' +
+          state[other].coder + ': ' + (theirs.length ? theirs.map(c => r.labels[c]).join(', ') : '(none)');
+        frag.appendChild(sp); els.push(sp);
+      });
+      body.appendChild(frag);
+      state.segEls[slot] = els;
+    }
+    state.segEls.M = [];
+  }
+
+  function mergedClass(a, b) {
+    if (a.length && !b.length) return 'm-aonly';
+    if (b.length && !a.length) return 'm-bonly';
+    if (a.length === b.length && a.every(c => b.includes(c))) return 'm-agree';
+    return 'm-mix';
+  }
+
+  function renderMerged() {
+    const r = state.result, body = $('bodyM'); body.replaceChildren();
+    $('headM').textContent = 'Merged · ' + state.A.coder + ' (A) vs ' + state.B.coder + ' (B)';
+    const frag = document.createDocumentFragment(), els = [];
+    r.segs.forEach((sg, i) => {
+      const txt = r.text.slice(sg.s, sg.e);
+      if (!sg.a.length && !sg.b.length) { frag.appendChild(document.createTextNode(txt)); els.push(null); return; }
+      const sp = h('span', 'seg ' + mergedClass(sg.a, sg.b), txt);
+      sp.dataset.i = String(i);
+      sp.title = state.A.coder + ': ' + (sg.a.map(c => r.labels[c]).join(', ') || '(none)') + '\n' +
+        state.B.coder + ': ' + (sg.b.map(c => r.labels[c]).join(', ') || '(none)');
+      frag.appendChild(sp); els.push(sp);
+    });
+    body.appendChild(frag);
+    state.segEls = { A: [], B: [], M: els };
+  }
+
+  function resetDetail() {
+    const d = $('detail'); d.replaceChildren();
+    d.appendChild(h('p', 'muted', 'Click a highlighted passage to see what each coder applied there.'));
+  }
+
+  function select(i) {
+    for (const k of ['A', 'B', 'M']) {
+      if (state.sel != null && state.segEls[k][state.sel]) state.segEls[k][state.sel].classList.remove('sel');
+      if (state.segEls[k][i]) state.segEls[k][i].classList.add('sel');
+    }
+    state.sel = i;
+    showDetail(i);
+  }
+
+  function codeChip(code) {
+    const chip = h('span', 'chip static');
+    const sw = h('span', 'sw'); sw.style.backgroundColor = state.colors[code];
+    chip.appendChild(sw); chip.appendChild(document.createTextNode(state.result.labels[code]));
+    return chip;
+  }
+
+  function showDetail(i) {
+    const r = state.result, sg = r.segs[i], d = $('detail');
+    d.replaceChildren();
+    d.appendChild(h('h3', null, 'Characters ' + sg.s + '–' + sg.e));
+    d.appendChild(h('blockquote', null, excerpt(r.text.slice(sg.s, sg.e), 400)));
+    const cls = mergedClass(sg.a, sg.b);
+    const verdict = { 'm-agree': 'Both coders applied the same code(s) here.', 'm-aonly': 'Only coder A coded this text.', 'm-bonly': 'Only coder B coded this text.', 'm-mix': 'Both coders coded this text, with different codes.' }[cls];
+    d.appendChild(h('p', null, verdict));
+    for (const slot of ['A', 'B']) {
+      d.appendChild(h('h4', null, 'Coder ' + slot + ' · ' + state[slot].coder));
+      const list = state[slot].anns.filter(a => a.start < sg.e && a.end > sg.s);
+      if (!list.length) { d.appendChild(h('p', 'muted', 'No span here.')); continue; }
+      for (const a of list) {
+        const box = h('div', 'ann');
+        box.appendChild(codeChip(a.code));
+        const row = r.spans.find(x => x.ann === a);
+        box.appendChild(h('div', 'meta', a.id + ' · ' + a.start + '–' + a.end + ' · ' + (row ? STATUS[row.status][0] + (row.iou ? ' (IoU ' + fmt(row.iou, 2) + ')' : '') : '')));
+        box.appendChild(h('div', 'excerpt', excerpt(r.text.slice(a.start, a.end), 240)));
+        if (a.comment) box.appendChild(h('div', 'meta', 'Comment: ' + a.comment));
+        if (a.category) box.appendChild(h('div', 'meta', 'Category: ' + a.category));
+        d.appendChild(box);
+      }
+    }
+  }
+
+  function goTo(ann) {
+    setTab('view');
+    const r = state.result;
+    const i = r.segs.findIndex(s => s.s === ann.start);
+    if (i < 0) return;
+    const el = state.opts.view === 'side' ? (state.segEls[ann.slot][i] || state.segEls[ann.slot === 'A' ? 'B' : 'A'][i]) : state.segEls.M[i];
+    select(i);
+    if (el) {
+      el.scrollIntoView({ block: 'center' });
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    }
+  }
+
+  /* ---------- stats tab ---------- */
+  function statCard(k, v, s, bv) {
+    const c = h('div', 'stat');
+    c.appendChild(h('div', 'k', k));
+    const vv = h('div', 'v', v);
+    if (bv !== undefined) { const b = bandEl(bv); if (b) vv.appendChild(b); }
+    c.appendChild(vv);
+    if (s) c.appendChild(h('div', 's', s));
+    return c;
+  }
+
+  function table(headers, rows, numericFrom, numericTo) {
+    const isNum = j => j >= numericFrom && (numericTo == null || j <= numericTo);
+    const wrap = h('div', 'tablewrap'), t = h('table'), th = h('thead'), tr = h('tr');
+    headers.forEach((x, j) => { const c = h('th', isNum(j) ? 'n' : null, x[0]); if (x[1]) c.title = x[1]; tr.appendChild(c); });
+    th.appendChild(tr); t.appendChild(th);
+    const tb = h('tbody');
+    rows.forEach(r => {
+      const row = h('tr');
+      r.forEach((v, j) => {
+        const td = h('td', isNum(j) ? 'n' : null);
+        if (v instanceof Node) td.appendChild(v); else td.textContent = v;
+        row.appendChild(td);
+      });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb); wrap.appendChild(t);
+    return wrap;
+  }
+
+  function renderStats() {
+    const r = state.result, o = r.overall, root = $('tab-stats');
+    root.replaceChildren();
+    const un = UNIT_NAMES[r.opts.unit];
+
+    root.appendChild(h('h2', null, 'Whole note'));
+    const cards = h('div', 'cards');
+    cards.appendChild(statCard('Character IoU (micro)', fmt(o.microIoU), 'macro ' + fmt(o.macroIoU) + ' across ' + o.codes + ' code(s)'));
+    cards.appendChild(statCard('Span F1', fmt(o.spanF1), o.matched + ' matched · ' + o.spansA + ' A / ' + o.spansB + ' B spans · IoU ≥ ' + r.opts.thr));
+    cards.appendChild(statCard('Krippendorff α (pooled)', fmt(o.pooledAlpha), 'binary presence, ' + o.units + ' ' + un[1] + ' × ' + o.codes + ' codes', o.pooledAlpha));
+    cards.appendChild(statCard('Krippendorff α (label set)', fmt(o.labelAlpha), 'exact code set per ' + un[0] + '; ' + pct(o.labelPct) + ' raw agreement', o.labelAlpha));
+    cards.appendChild(statCard('Cohen κ (pooled)', fmt(o.pooledKappa), pct(o.pooledPct) + ' raw agreement'));
+    cards.appendChild(statCard('Any-code text IoU', fmt(o.anyIoU), 'text selected at all, ignoring which code'));
+    root.appendChild(cards);
+
+    r.warnings.forEach(w => root.appendChild(h('div', 'warnbox', w)));
+
+    root.appendChild(h('h2', null, 'By code (text level)'));
+    root.appendChild(h('p', 'muted', 'Units: ' + o.units + ' ' + un[1] + '. A ' + un[0] + ' counts as coded when any non-whitespace character in it is covered by a span with that code. Spans: A is the reference for precision/recall.'));
+    const rows = r.perCode.map(p => {
+      const name = codeChip(p.code);
+      const a = h('span', null, fmt(p.alpha)); const b = bandEl(p.alpha); if (b) a.appendChild(b);
+      return [name, p.spansA + ' / ' + p.spansB, p.charsA + ' / ' + p.charsB, fmt(p.iou), fmt(p.dice),
+        fmt(p.precision) + ' / ' + fmt(p.recall) + ' / ' + fmt(p.f1),
+        p.unitsA + ' / ' + p.unitsB, pct(p.pctAgree), fmt(p.kappa), a, fmt(p.icc2), fmt(p.icc3)];
+    });
+    root.appendChild(table([
+      ['Code'], ['Spans A / B'], ['Chars A / B', 'Characters covered, including whitespace inside spans'],
+      ['Char IoU', 'Intersection ÷ union of covered characters'], ['Dice'],
+      ['Span P / R / F1', 'One-to-one span matching, same code, IoU ≥ threshold'],
+      [un[1][0].toUpperCase() + un[1].slice(1) + ' A / B', 'Units marked present by each coder'],
+      ['% agree'], ['Cohen κ'], ['Krippendorff α', 'Nominal (binary presence per unit)'],
+      ['ICC(2,1)', 'Two-way random, absolute agreement, single rater, on coverage proportion per unit'],
+      ['ICC(3,1)', 'Two-way mixed, consistency, single rater']
+    ], rows, 1));
+
+    root.appendChild(h('h2', null, 'Note level (code counts)'));
+    const n = r.note;
+    root.appendChild(table([['Code'], ['Spans A'], ['Spans B'], ['Both used it?']],
+      n.rows.map(x => [codeChip(x.code), String(x.countA), String(x.countB), x.presentA && x.presentB ? 'yes' : 'no']), 1, 2));
+    const nc = h('div', 'cards');
+    nc.appendChild(statCard('Code presence agreement', pct(n.presencePct), 'κ ' + fmt(n.presenceKappa) + ' · across ' + n.n + ' code(s) used by either coder'));
+    nc.appendChild(statCard('ICC(2,1) on counts', fmt(n.countIcc2), 'ICC(3,1) ' + fmt(n.countIcc3) + ' · n = ' + n.n + ' codes'));
+    nc.appendChild(statCard('Krippendorff α on counts', fmt(n.countAlpha), 'interval metric', n.countAlpha));
+    root.appendChild(nc);
+    if (n.codebookCount && n.codebookCount > n.n) {
+      root.appendChild(h('div', 'warnbox', 'The codebook lists ' + n.codebookCount + ' codes but only ' + n.n + ' appear in these files. Codes neither coder used cannot be identified from the exports, so they are not counted as agreements; presence agreement is therefore conservative.'));
+    }
+
+    const det = h('details', 'method');
+    det.appendChild(h('summary', null, 'How these are calculated'));
+    const dl = h('dl');
+    [
+      ['Character IoU', 'For each code, the characters each coder covered (by offsets) are compared: intersection ÷ union. Micro pools all codes; macro averages the per-code values. Dice = 2·intersection ÷ (A + B).'],
+      ['Span matching', 'Spans with the same code are paired one-to-one, greedily by descending IoU, keeping pairs with IoU ≥ the threshold. Precision = matches ÷ B spans, recall = matches ÷ A spans, F1 = 2·matches ÷ (A + B). Ids are never used for matching.'],
+      ['Text units', 'Tokens are runs of non-whitespace. Sentences split at line breaks and at . ! ? followed by whitespace (approximate; abbreviations such as "Dr." will split). Characters exclude whitespace.'],
+      ['Cohen κ and Krippendorff α', 'Computed per code on binary presence per unit. Pooled versions stack every unit × code pair. The label-set version treats the exact set of codes on each unit as one nominal category (∅ when uncoded). With two coders and no missing data, α is nominal Krippendorff α from the coincidence matrix. Values are undefined (—) when there is no variation.'],
+      ['ICC', 'Computed per code on the proportion of each unit covered (0–1), using ANOVA mean squares: ICC(2,1) = (MSR − MSE) ÷ (MSR + MSE + 2(MSC − MSE)/n); ICC(3,1) = (MSR − MSE) ÷ (MSR + MSE). At note level, ICC uses span counts per code, which is only informative with many codes or, better, many notes.'],
+      ['Interpretation bands', 'Krippendorff’s conventional thresholds: ≥ .800 reliable, .667–.800 tentative conclusions only, < .667 unreliable. When one category dominates (most text uncoded), κ and α can be low despite high raw agreement, so read them alongside % agree and IoU.']
+    ].forEach(([t, dd]) => { dl.appendChild(h('dt', null, t)); dl.appendChild(h('dd', null, dd)); });
+    det.appendChild(dl);
+    root.appendChild(det);
+  }
+
+  /* ---------- spans tab ---------- */
+  function renderSpans() {
+    const r = state.result, root = $('tab-spans');
+    root.replaceChildren();
+    const counts = {};
+    r.spans.forEach(x => { counts[x.status] = (counts[x.status] || 0) + 1; });
+    const summ = h('div', 'legend');
+    Object.keys(STATUS).forEach(k => {
+      if (!counts[k]) return;
+      const c = h('span', 'st st-' + k, STATUS[k][0] + ' · ' + counts[k]); c.title = STATUS[k][1]; summ.appendChild(c);
+    });
+    root.appendChild(summ);
+    root.appendChild(h('p', 'muted', 'Every span from both coders, in note order. Click a row to jump to it in the text.'));
+    const wrap = h('div', 'tablewrap'), t = h('table'), thead = h('thead'), tr = h('tr');
+    ['Coder', 'Id', 'Code', 'Range', 'Text', 'Status', 'Closest counterpart', 'IoU'].forEach(x => tr.appendChild(h('th', null, x)));
+    thead.appendChild(tr); t.appendChild(thead);
+    const tb = h('tbody');
+    for (const row of r.spans) {
+      const a = row.ann, trr = h('tr', 'click');
+      trr.appendChild(h('td', null, a.slot + ' · ' + state[a.slot].coder));
+      trr.appendChild(h('td', null, a.id));
+      const cc = h('td'); cc.appendChild(codeChip(a.code)); trr.appendChild(cc);
+      trr.appendChild(h('td', 'n', a.start + '–' + a.end));
+      trr.appendChild(h('td', 'excerpt', excerpt(r.text.slice(a.start, a.end), 160)));
+      const st = h('td'); const chip = h('span', 'st st-' + row.status, STATUS[row.status][0]); chip.title = STATUS[row.status][1]; st.appendChild(chip); trr.appendChild(st);
+      const o = row.other;
+      trr.appendChild(h('td', null, o ? o.id + ' · ' + r.labels[o.code] + ' · ' + o.start + '–' + o.end : '—'));
+      trr.appendChild(h('td', 'n', row.iou ? fmt(row.iou, 2) : '—'));
+      trr.addEventListener('click', () => goTo(a));
+      tb.appendChild(trr);
+    }
+    t.appendChild(tb); wrap.appendChild(t); root.appendChild(wrap);
+  }
+
+  /* ---------- export ---------- */
+  function csvCell(v) {
+    if (v == null) return '';
+    if (typeof v === 'number') return isFinite(v) ? String(v) : '';
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;           // block spreadsheet formula injection
+    if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  const toCsv = rows => rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  const safeName = s => String(s || 'x').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 80);
+
+  function baseName() {
+    return safeName(state.A.meta.note_id || 'note') + '__' + safeName(state.A.coder) + '_vs_' + safeName(state.B.coder);
+  }
+
+  function download(name, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function buildReport() {
+    const r = state.result;
+    const fileInfo = slot => Object.assign({ file_name: state.files[slot].name }, state[slot].meta);
+    return {
+      generator: { name: APP.name, version: APP.version },
+      generated_at: new Date().toISOString(),
+      files: { A: fileInfo('A'), B: fileInfo('B') },
+      settings: { text_unit: r.opts.unit, span_iou_threshold: r.opts.thr, unit_count: r.units.length, unit_presence_rule: 'any non-whitespace character covered' },
+      validation: state.checks,
+      overall: r.overall,
+      per_code: r.perCode,
+      note_level: r.note,
+      warnings: r.warnings,
+      spans: r.spans.map(x => ({
+        coder: x.ann.slot, coder_id: state[x.ann.slot].coder, id: x.ann.id, code: x.ann.code,
+        start: x.ann.start, end: x.ann.end, status: x.status,
+        counterpart_id: x.other ? x.other.id : null, counterpart_code: x.other ? x.other.code : null, iou: x.iou
+      }))
+    };
+  }
+
+  function perCodeCsv() {
+    const r = state.result;
+    const head = ['code', 'label', 'spans_A', 'spans_B', 'chars_A', 'chars_B', 'char_intersection', 'char_union', 'char_iou', 'dice',
+      'span_matched', 'span_precision', 'span_recall', 'span_f1', 'units_A', 'units_B', 'unit_pct_agree', 'cohen_kappa', 'kripp_alpha_nominal', 'icc2_1', 'icc3_1'];
+    const rows = r.perCode.map(p => [p.code, p.label, p.spansA, p.spansB, p.charsA, p.charsB, p.interChars, p.unionChars, p.iou, p.dice,
+      p.matched, p.precision, p.recall, p.f1, p.unitsA, p.unitsB, p.pctAgree, p.kappa, p.alpha, p.icc2, p.icc3]);
+    const o = r.overall;
+    rows.push(['__overall__', 'micro/pooled', o.spansA, o.spansB, '', '', '', '', o.microIoU, '', o.matched, o.spanPrecision, o.spanRecall, o.spanF1,
+      '', '', o.pooledPct, o.pooledKappa, o.pooledAlpha, '', '']);
+    const meta = [['# coder_A', state.A.coder, '# coder_B', state.B.coder, '# unit', r.opts.unit, '# unit_count', r.units.length, '# iou_threshold', r.opts.thr]];
+    return toCsv(meta.concat([head], rows));
+  }
+
+  function spansCsv() {
+    const r = state.result;
+    const rows = [['coder', 'coder_id', 'id', 'code', 'start', 'end', 'text', 'status', 'counterpart_id', 'counterpart_code', 'iou']];
+    r.spans.forEach(x => rows.push([x.ann.slot, state[x.ann.slot].coder, x.ann.id, x.ann.code, x.ann.start, x.ann.end,
+      r.text.slice(x.ann.start, x.ann.end), x.status, x.other ? x.other.id : '', x.other ? x.other.code : '', x.iou]));
+    return toCsv(rows);
+  }
+
+  function renderExport() {
+    const root = $('tab-export'); root.replaceChildren();
+    const box = h('div', 'exports');
+    const add = (label, desc, fn) => {
+      const row = h('div', 'rowx'); const b = h('button', 'primary', label); b.type = 'button';
+      b.addEventListener('click', fn); row.appendChild(b); row.appendChild(h('span', null, desc)); box.appendChild(row);
+    };
+    add('Full report (.json)', 'All statistics, settings, validation results and file hashes, for reproducibility.',
+      () => download(baseName() + '__agreement.json', 'application/json', JSON.stringify(buildReport(), null, 2)));
+    add('Per-code statistics (.csv)', 'One row per code plus an overall row.',
+      () => download(baseName() + '__per_code.csv', 'text/csv', perCodeCsv()));
+    add('Span table (.csv)', 'Every span with its match status. Contains note text excerpts.',
+      () => download(baseName() + '__spans.csv', 'text/csv', spansCsv()));
+    add('Print statistics', 'Prints the Statistics tab (or save it as PDF from the print dialog).', () => window.print());
+    root.appendChild(box);
+    root.appendChild(h('p', 'muted', 'Files are generated in this browser and saved wherever your browser puts downloads. The span table includes note text, so handle it like the source notes.'));
+  }
+
+  /* ---------- tabs & wiring ---------- */
+  function setTab(t) {
+    state.tab = t;
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+    ['view', 'stats', 'spans', 'export'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
+  }
+
+  let syncing = false;
+  function syncScroll(from, to) {
+    if (!state.opts.sync || syncing || state.opts.view !== 'side') return;
+    syncing = true;
+    $(to).scrollTop = $(from).scrollTop;
+    requestAnimationFrame(() => { syncing = false; });
+  }
+
+  function init() {
+    // stop the browser from opening a file dropped outside the drop zones
+    window.addEventListener('dragover', e => e.preventDefault());
+    window.addEventListener('drop', e => e.preventDefault());
+    for (const slot of ['A', 'B']) {
+      const input = $('file' + slot), drop = $('drop' + slot);
+      input.addEventListener('change', () => { handleFiles(input.files, slot).finally(() => { input.value = ''; }); });
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+      drop.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); drop.classList.remove('over'); handleFiles(e.dataTransfer.files, slot); });
+    }
+    $('swapBtn').addEventListener('click', () => { const t = state.files.A; state.files.A = state.files.B; state.files.B = t; refresh(); });
+    $('clearBtn').addEventListener('click', () => {
+      state.files = { A: null, B: null }; state.result = null; state.A = state.B = null;
+      ['bodyA', 'bodyB', 'bodyM', 'tab-stats', 'tab-spans', 'tab-export'].forEach(id => $(id).replaceChildren());
+      refresh();
+    });
+    $('unitSel').addEventListener('change', e => { state.opts.unit = e.target.value; if (state.result) recompute(); });
+    $('thrInput').addEventListener('change', e => {
+      let v = parseFloat(e.target.value); if (!isFinite(v)) v = 0.5; v = Math.min(1, Math.max(0, v));
+      e.target.value = String(v); state.opts.thr = v; if (state.result) recompute();
+    });
+    $('viewSel').addEventListener('change', e => { state.opts.view = e.target.value; if (state.result) { state.sel = null; renderLegend(); renderView(); resetDetail(); } });
+    $('syncChk').addEventListener('change', e => { state.opts.sync = e.target.checked; });
+    $('tabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
+    for (const id of ['bodyA', 'bodyB', 'bodyM']) {
+      $(id).addEventListener('click', e => { const s = e.target.closest('.seg'); if (s && s.dataset.i) select(parseInt(s.dataset.i, 10)); });
+    }
+    $('bodyA').addEventListener('scroll', () => syncScroll('bodyA', 'bodyB'));
+    $('bodyB').addEventListener('scroll', () => syncScroll('bodyB', 'bodyA'));
+  }
+
+  return { init, state };
+})();
+
+if (typeof document !== 'undefined') UI.init();
+</script>
+</body>
+</html>

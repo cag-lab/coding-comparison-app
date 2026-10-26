@@ -1,0 +1,10 @@
+# Never commit real coder exports or reports; examples/ holds synthetic data only.
+*.json
+!examples/*.json
+*.csv
+*_agreement.json
+
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
