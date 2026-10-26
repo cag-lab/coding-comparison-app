@@ -4,12 +4,6 @@ A single, offline HTML file for comparing two coders' annotations of the same cl
 
 It reads the `note-coder/v1` JSON export format (see [`examples/`](examples/)). Everything runs in your browser: there is nothing to install, no server, and no network access.
 
-![Side-by-side text view with validation results and the span detail panel](docs/screenshots/text-view.png)
-
-![Statistics tab: whole-note, per-code and note-level agreement](docs/screenshots/statistics.png)
-
-*Screenshots show the synthetic example note and example coding in [`examples/`](examples/); no real patient data.*
-
 ## Quick start
 
 1. Download [`coder-agreement-viewer.html`](coder-agreement-viewer.html) (on GitHub: open the file, then **Download raw file**).
@@ -17,6 +11,22 @@ It reads the `note-coder/v1` JSON export format (see [`examples/`](examples/)). 
 3. Drop two coder exports for the same note onto the page (or select both at once). The first goes to Coder A, the second to Coder B.
 
 To try it, use the two synthetic files in [`examples/`](examples/).
+
+## Example
+
+These screenshots show the app with the two files in [`examples/`](examples/): a synthetic ICU progress note coded by two coders, `cag` and `cag2`. The note and coding are synthetic and contain no real patient data.
+
+**Text view.** Validation results at the top. Below them, the two coders' highlights side by side, and the detail panel for a clicked passage. Here both coders coded the propofol line as *Physiological failure*.
+
+![Side-by-side text view with validation results and the span detail panel](docs/screenshots/text-view.png)
+
+**Statistics.** Whole-note summary, per-code text-level agreement, and note-level agreement on span counts.
+
+![Statistics tab: whole-note, per-code and note-level agreement](docs/screenshots/statistics.png)
+
+**Code present in the note (yes / no).** At the bottom of the Statistics tab: whether each coder used each code anywhere in the note. The measures are shown over the codes either coder used, and over the whole codebook, where the unused codes count as agreeing "no".
+
+![Yes/no code presence table and agreement measures](docs/screenshots/code-presence.png)
 
 ## What it shows
 
