@@ -28,12 +28,21 @@ async def main():
             await pg.click('#bodyA .seg >> nth=3')
             await pg.click('[data-tab=stats]'); await pg.screenshot(path=f'{OUT}/s_stats_{scheme}.png', full_page=True)
             if scheme=='light':
+                await pg.click('#tab-stats tbody tr.click >> nth=0')   # paragraph row -> Text tab
+                assert 'Paragraph' in await pg.inner_text('#detail h3'), 'paragraph detail not shown'
+                await pg.click('[data-tab=stats]'); await pg.click('#tab-stats .toggle input')
+                n_rows = await pg.locator('#tab-stats tbody tr.click').count()
+                print('paragraph rows with uncoded shown:', n_rows)
+                if n_rows != 20: failures.append(f'expected 20 paragraph rows, got {n_rows}')
+                await pg.select_option('#unitSel','paragraph')
                 await pg.click('[data-tab=spans]'); await pg.screenshot(path=f'{OUT}/s_spans.png', full_page=True)
                 await pg.click('#tab-spans tbody tr >> nth=5'); 
                 await pg.select_option('#viewSel','merged'); await pg.screenshot(path=f'{OUT}/s_merged.png')
                 await pg.select_option('#unitSel','char'); await pg.click('[data-tab=export]')
                 async with pg.expect_download() as d: await pg.click('text=Full report (.json)')
                 dl=await d.value; print('download', dl.suggested_filename)
+                async with pg.expect_download() as d: await pg.click('text=Paragraph table (.csv)')
+                await (await d.value).save_as(OUT/'paragraphs.csv')
                 async with pg.expect_download() as d: await pg.click('text=Span table (.csv)')
                 await (await d.value).save_as(OUT/'spans.csv')
             net=[r for r in reqs if not r.startswith('file:') and not r.startswith('blob:')]

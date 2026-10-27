@@ -11,7 +11,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-klPf+LXBJDMGvu2BglvXy0cQqszTf+KE2mhrv1fR8yI='; style-src 'sha256-QFqjfzUZgnPSlptjGFo4HnmFBBGc/fNnoEWwYC5TtgI='; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZbHhFxGDpfJJLVhC46btdBXFibKaEmgTFnhTSH/QzGw='; style-src 'sha256-COP5cuhyuJ1YgJYc6jd4yWk7h8ATVZbgkzB/z1tPuA4='; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Coder Agreement Viewer</title>
 <style>
@@ -112,6 +112,10 @@ tbody tr.click:hover{background:var(--soft)}
 .st-partial{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
 .st-diffcode{color:var(--mix);background:color-mix(in srgb,var(--mix) 15%,transparent)}
 .st-elsewhere{color:var(--aonly);background:color-mix(in srgb,var(--aonly) 15%,transparent)}
+.st-bonly{color:var(--bonly);background:color-mix(in srgb,var(--bonly) 15%,transparent)}
+.st-neither{color:var(--muted);background:var(--soft)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.toggle{display:flex;gap:6px;align-items:center;font-size:13px;margin:0 0 8px}
 .st-none{color:var(--err);background:color-mix(in srgb,var(--err) 13%,transparent)}
 .warnbox{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;font-size:13px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
 details.method{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
@@ -166,6 +170,7 @@ details.method dd{margin:2px 0 0 0}
         <select id="unitSel">
           <option value="token">Tokens (words)</option>
           <option value="sentence">Sentences / lines</option>
+          <option value="paragraph">Paragraphs</option>
           <option value="char">Characters</option>
         </select>
       </label>
@@ -333,6 +338,13 @@ const Core = (() => {
       return U;
     }
     const push = (s, e) => { while (s < e && ws[s]) s++; while (e > s && ws[e - 1]) e--; if (e > s) U.push([s, e]); };
+    if (mode === 'paragraph') {
+      // blocks separated by one or more blank lines
+      const re = /\n[ \t]*\n/g; let s = 0, m;
+      while ((m = re.exec(text)) !== null) { push(s, m.index); s = m.index + m[0].length; re.lastIndex = m.index + 1; }
+      push(s, text.length);
+      return U;
+    }
     let ls = 0;
     for (const line of text.split('\n')) {
       const re = /[.!?]+["')\]]*(?=\s)/g; let s = 0, m;
@@ -582,9 +594,65 @@ const Core = (() => {
       unusedCodes: unused
     };
 
-    // segments for rendering
+    // per paragraph, independent of the chosen text unit
+    const paras = buildUnits(text, 'paragraph', ws);
+    const toks = opts.unit === 'token' ? units : buildUnits(text, 'token', ws);
+    const prefix = (f) => { const p = new Uint32Array(N + 1); for (let i = 0; i < N; i++) p[i + 1] = p[i] + f(i); return p; };
+    const PA = {}, PB = {}, PI = {}, QA = {}, QB = {};
+    for (const c of codes) {
+      const a = mA[c], b = mB[c];
+      PA[c] = prefix(i => a[i]); PB[c] = prefix(i => b[i]); PI[c] = prefix(i => a[i] & b[i]);
+      QA[c] = prefix(i => (a[i] && !ws[i]) ? 1 : 0); QB[c] = prefix(i => (b[i] && !ws[i]) ? 1 : 0);
+    }
+    const within = (P, s, e) => P[e] - P[s];
+    const paraX = [], paraY = [];
+    let ti = 0;
+    const paragraphs = paras.map(([s, e], k) => {
+      const codesA = codes.filter(c => within(QA[c], s, e) > 0);
+      const codesB = codes.filter(c => within(QB[c], s, e) > 0);
+      let inter = 0, uni = 0, ca = 0, cb = 0;
+      for (const c of codes) {
+        const ia = within(PA[c], s, e), ib = within(PB[c], s, e), ii = within(PI[c], s, e);
+        inter += ii; uni += ia + ib - ii; ca += ia; cb += ib;
+      }
+      while (ti < toks.length && toks[ti][0] < s) ti++;
+      const t0 = ti, tx = [], ty = [];
+      for (; ti < toks.length && toks[ti][1] <= e; ti++) {
+        const [ts, te] = toks[ti];
+        for (const c of codes) { tx.push(within(QA[c], ts, te) > 0 ? 1 : 0); ty.push(within(QB[c], ts, te) > 0 ? 1 : 0); }
+      }
+      for (const c of codes) { paraX.push(codesA.includes(c) ? 1 : 0); paraY.push(codesB.includes(c) ? 1 : 0); }
+      let status;
+      if (!codesA.length && !codesB.length) status = 'neither';
+      else if (!codesB.length) status = 'aonly';
+      else if (!codesA.length) status = 'bonly';
+      else if (codesA.length === codesB.length && codesA.every(c => codesB.includes(c))) status = 'same';
+      else if (codesA.some(c => codesB.includes(c))) status = 'overlap';
+      else status = 'differ';
+      return {
+        index: k + 1, start: s, end: e, heading: text.slice(s, e).split('\n')[0],
+        tokens: ti - t0,
+        spansA: A.anns.filter(a => a.start < e && a.end > s).length,
+        spansB: B.anns.filter(b => b.start < e && b.end > s).length,
+        codesA, codesB, status, charsA: ca, charsB: cb,
+        charIoU: uni ? inter / uni : null,
+        tokenPctAgree: (ca || cb) ? pctAgree(tx, ty) : null,
+        tokenKappa: (ca || cb) ? cohenKappa(tx, ty) : null
+      };
+    });
+    const coded = paragraphs.filter(p => p.status !== 'neither');
+    const sameSets = coded.filter(p => p.status === 'same').length;
+    const paragraphSummary = {
+      count: paragraphs.length, codedByEither: coded.length,
+      sameCodeSets: sameSets, sameCodeSetsPct: coded.length ? sameSets / coded.length : null,
+      meanCharIoU: mean(coded.map(p => p.charIoU).filter(v => v != null)),
+      presencePct: pctAgree(paraX, paraY), presenceKappa: cohenKappa(paraX, paraY), presenceAlpha: alphaNominal(paraX, paraY)
+    };
+
+    // segments for rendering (paragraph starts are boundaries so the view can scroll to them)
     const bset = new Set([0, N]);
     for (const a of all) { bset.add(a.start); bset.add(a.end); }
+    for (const [ps] of paras) bset.add(ps);
     const pts = Array.from(bset).sort((p, q) => p - q);
     const segs = [];
     for (let i = 0; i < pts.length - 1; i++) {
@@ -600,7 +668,7 @@ const Core = (() => {
     if (units.length < 10) warnings.push('Fewer than 10 text units; text-level kappa, alpha and ICC are unstable.');
     if (codes.length < 5) warnings.push('Only ' + codes.length + ' code(s) in use, so note-level statistics across codes rest on very few data points. Note-level ICC becomes meaningful when you compare many notes.');
 
-    return { text, codes, labels, units, perCode, overall, note, presence, segs, spans, warnings, opts: Object.assign({}, opts) };
+    return { text, codes, labels, units, perCode, overall, note, presence, paragraphs, paragraphSummary, segs, spans, warnings, opts: Object.assign({}, opts) };
   }
 
   return { MAX_BYTES, validateFile, crossValidate, sha256Hex, normalize, buildUnits, compute,
@@ -616,7 +684,15 @@ const UI = (() => {
     if (text != null) e.textContent = text;
     return e;
   };
-  const UNIT_NAMES = { token: ['token', 'tokens'], sentence: ['sentence', 'sentences'], char: ['character', 'characters'] };
+  const UNIT_NAMES = { token: ['token', 'tokens'], sentence: ['sentence', 'sentences'], paragraph: ['paragraph', 'paragraphs'], char: ['character', 'characters'] };
+  const PSTATUS = {
+    same: ['Same codes', 'st-matched', 'Both coders applied exactly the same set of codes in this paragraph.'],
+    overlap: ['Some codes shared', 'st-partial', 'Both coders coded this paragraph and share some, but not all, codes.'],
+    differ: ['Different codes', 'st-diffcode', 'Both coders coded this paragraph, with no codes in common.'],
+    aonly: ['Only A', 'st-elsewhere', 'Only coder A coded anything in this paragraph.'],
+    bonly: ['Only B', 'st-bonly', 'Only coder B coded anything in this paragraph.'],
+    neither: ['Neither', 'st-neither', 'Neither coder coded anything in this paragraph.']
+  };
   const STATUS = {
     matched: ['Matched', 'Same code, overlap at or above the IoU threshold'],
     partial: ['Partial overlap', 'Same code overlaps, but below the IoU threshold or already matched'],
@@ -629,7 +705,7 @@ const UI = (() => {
     files: { A: null, B: null },
     opts: { unit: 'token', thr: 0.5, view: 'side', sync: true },
     hidden: new Set(), colors: {}, checks: [], result: null, A: null, B: null,
-    segEls: { A: [], B: [], M: [] }, sel: null, tab: 'view'
+    segEls: { A: [], B: [], M: [] }, paraEls: { A: [], B: [], M: [] }, sel: null, tab: 'view', showUncodedParas: false
   };
 
   const fmt = (v, d = 3) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d);
@@ -804,8 +880,9 @@ const UI = (() => {
       const body = $('body' + slot); body.replaceChildren();
       const other = slot === 'A' ? 'B' : 'A';
       $('head' + slot).textContent = 'Coder ' + slot + ' · ' + state[slot].coder + ' · ' + state[slot].anns.length + ' span(s)';
-      const frag = document.createDocumentFragment(), els = [];
+      const frag = document.createDocumentFragment(), els = [], anchors = [], starts = paraStarts();
       r.segs.forEach((sg, i) => {
+        addAnchor(frag, anchors, starts, sg.s);
         const txt = r.text.slice(sg.s, sg.e);
         const mine = vis(slot === 'A' ? sg.a : sg.b), theirs = slot === 'A' ? sg.b : sg.a;
         if (!mine.length) { frag.appendChild(document.createTextNode(txt)); els.push(null); return; }
@@ -819,8 +896,20 @@ const UI = (() => {
       });
       body.appendChild(frag);
       state.segEls[slot] = els;
+      state.paraEls[slot] = anchors;
     }
-    state.segEls.M = [];
+    state.segEls.M = []; state.paraEls.M = [];
+  }
+
+  function paraStarts() {
+    const m = new Map();
+    state.result.paragraphs.forEach((p, k) => m.set(p.start, k));
+    return m;
+  }
+  function addAnchor(frag, anchors, starts, offset) {
+    if (!starts.has(offset)) return;
+    const an = h('span', 'para-anchor'); const k = starts.get(offset);
+    an.dataset.p = String(k); anchors[k] = an; frag.appendChild(an);
   }
 
   function mergedClass(a, b) {
@@ -833,8 +922,9 @@ const UI = (() => {
   function renderMerged() {
     const r = state.result, body = $('bodyM'); body.replaceChildren();
     $('headM').textContent = 'Merged · ' + state.A.coder + ' (A) vs ' + state.B.coder + ' (B)';
-    const frag = document.createDocumentFragment(), els = [];
+    const frag = document.createDocumentFragment(), els = [], anchors = [], starts = paraStarts();
     r.segs.forEach((sg, i) => {
+      addAnchor(frag, anchors, starts, sg.s);
       const txt = r.text.slice(sg.s, sg.e);
       if (!sg.a.length && !sg.b.length) { frag.appendChild(document.createTextNode(txt)); els.push(null); return; }
       const sp = h('span', 'seg ' + mergedClass(sg.a, sg.b), txt);
@@ -845,6 +935,7 @@ const UI = (() => {
     });
     body.appendChild(frag);
     state.segEls = { A: [], B: [], M: els };
+    state.paraEls = { A: [], B: [], M: anchors };
   }
 
   function resetDetail() {
@@ -869,16 +960,46 @@ const UI = (() => {
   }
 
   function showDetail(i) {
-    const r = state.result, sg = r.segs[i], d = $('detail');
-    d.replaceChildren();
-    d.appendChild(h('h3', null, 'Characters ' + sg.s + '–' + sg.e));
-    d.appendChild(h('blockquote', null, excerpt(r.text.slice(sg.s, sg.e), 400)));
+    const r = state.result, sg = r.segs[i];
     const cls = mergedClass(sg.a, sg.b);
     const verdict = { 'm-agree': 'Both coders applied the same code(s) here.', 'm-aonly': 'Only coder A coded this text.', 'm-bonly': 'Only coder B coded this text.', 'm-mix': 'Both coders coded this text, with different codes.' }[cls];
-    d.appendChild(h('p', null, verdict));
+    showRange(sg.s, sg.e, 'Characters ' + sg.s + '–' + sg.e, h('p', null, verdict));
+  }
+
+  function showParagraph(k) {
+    const p = state.result.paragraphs[k], box = h('div');
+    box.appendChild(h('p', null, PSTATUS[p.status][2]));
+    if (p.status !== 'neither') {
+      const facts = [['Spans A / B', p.spansA + ' / ' + p.spansB], ['Character IoU', fmt(p.charIoU)],
+        ['Token % agree', pct(p.tokenPctAgree)], ['Token κ', fmt(p.tokenKappa)]];
+      const t = h('table'); const tb = h('tbody');
+      facts.forEach(([a, b]) => { const tr = h('tr'); tr.appendChild(h('td', null, a)); tr.appendChild(h('td', 'n', b)); tb.appendChild(tr); });
+      t.appendChild(tb); box.appendChild(t);
+    }
+    showRange(p.start, p.end, 'Paragraph ' + p.index + ' · characters ' + p.start + '–' + p.end, box, 160);
+  }
+
+  function goToParagraph(k) {
+    setTab('view');
+    for (const key of ['A', 'B', 'M']) if (state.sel != null && state.segEls[key][state.sel]) state.segEls[key][state.sel].classList.remove('sel');
+    state.sel = null;
+    const slots = state.opts.view === 'side' ? ['A', 'B'] : ['M'];
+    for (const sl of slots) {
+      const an = state.paraEls[sl][k], body = $('body' + sl);
+      if (an) body.scrollTop += an.getBoundingClientRect().top - body.getBoundingClientRect().top - 12;
+    }
+    showParagraph(k);
+  }
+
+  function showRange(s, e, title, verdictNode, quoteLen) {
+    const r = state.result, d = $('detail');
+    d.replaceChildren();
+    d.appendChild(h('h3', null, title));
+    d.appendChild(h('blockquote', null, excerpt(r.text.slice(s, e), quoteLen || 400)));
+    if (verdictNode) d.appendChild(verdictNode);
     for (const slot of ['A', 'B']) {
       d.appendChild(h('h4', null, 'Coder ' + slot + ' · ' + state[slot].coder));
-      const list = state[slot].anns.filter(a => a.start < sg.e && a.end > sg.s);
+      const list = state[slot].anns.filter(a => a.start < e && a.end > s);
       if (!list.length) { d.appendChild(h('p', 'muted', 'No span here.')); continue; }
       for (const a of list) {
         const box = h('div', 'ann');
@@ -937,6 +1058,52 @@ const UI = (() => {
   }
 
   const yn = v => v ? 'yes' : 'no';
+
+  function chipList(codes) {
+    if (!codes.length) return h('span', 'muted', '—');
+    const w = h('span', 'chips'); codes.forEach(c => w.appendChild(codeChip(c))); return w;
+  }
+
+  function renderParagraphs(root) {
+    const r = state.result, ps = r.paragraphSummary;
+    root.appendChild(h('h2', null, 'By paragraph'));
+    root.appendChild(h('p', 'muted', 'Paragraphs are blocks of text separated by blank lines; in a typical note these are the header lines, each section and each numbered problem. These statistics do not depend on the text-unit setting. Click a row to see the paragraph in the text.'));
+    const cards = h('div', 'cards');
+    cards.appendChild(statCard('Paragraphs coded', ps.codedByEither + ' of ' + ps.count, 'coded by at least one coder'));
+    cards.appendChild(statCard('Identical code sets', pct(ps.sameCodeSetsPct), ps.sameCodeSets + ' of ' + ps.codedByEither + ' coded paragraphs'));
+    cards.appendChild(statCard('Krippendorff α (paragraph level)', fmt(ps.presenceAlpha), 'code present per paragraph · ' + ps.count + ' paragraphs × ' + r.codes.length + ' codes', ps.presenceAlpha));
+    cards.appendChild(statCard('Cohen κ (paragraph level)', fmt(ps.presenceKappa), pct(ps.presencePct) + ' raw agreement'));
+    cards.appendChild(statCard('Mean character IoU', fmt(ps.meanCharIoU), 'across coded paragraphs'));
+    root.appendChild(cards);
+
+    const lab = h('label', 'toggle'); const cb = h('input'); cb.type = 'checkbox'; cb.checked = state.showUncodedParas;
+    cb.addEventListener('change', () => { state.showUncodedParas = cb.checked; const y = window.scrollY; renderStats(); window.scrollTo(0, y); });
+    lab.appendChild(cb); lab.appendChild(document.createTextNode('Show paragraphs neither coder coded (' + (ps.count - ps.codedByEither) + ')'));
+    root.appendChild(lab);
+
+    const wrap = h('div', 'tablewrap'), t = h('table'), thead = h('thead'), tr = h('tr');
+    [['#', 1], ['Paragraph', 0], ['Tokens', 1], ['Spans A / B', 1], ['Codes A · ' + state.A.coder, 0], ['Codes B · ' + state.B.coder, 0], ['Code sets', 0],
+      ['Char IoU', 1], ['Token % agree', 1], ['Token κ', 1]].forEach(([x, n]) => tr.appendChild(h('th', n ? 'n' : null, x)));
+    thead.appendChild(tr); t.appendChild(thead);
+    const tb = h('tbody');
+    r.paragraphs.forEach((p, k) => {
+      if (p.status === 'neither' && !state.showUncodedParas) return;
+      const row = h('tr', 'click');
+      row.appendChild(h('td', 'n', String(p.index)));
+      row.appendChild(h('td', 'excerpt', excerpt(p.heading, 70)));
+      row.appendChild(h('td', 'n', String(p.tokens)));
+      row.appendChild(h('td', 'n', p.spansA + ' / ' + p.spansB));
+      const ca = h('td'); ca.appendChild(chipList(p.codesA)); row.appendChild(ca);
+      const cbb = h('td'); cbb.appendChild(chipList(p.codesB)); row.appendChild(cbb);
+      const st = h('td'); const chip = h('span', 'st ' + PSTATUS[p.status][1], PSTATUS[p.status][0]); chip.title = PSTATUS[p.status][2]; st.appendChild(chip); row.appendChild(st);
+      row.appendChild(h('td', 'n', fmt(p.charIoU)));
+      row.appendChild(h('td', 'n', pct(p.tokenPctAgree)));
+      row.appendChild(h('td', 'n', fmt(p.tokenKappa)));
+      row.addEventListener('click', () => goToParagraph(k));
+      tb.appendChild(row);
+    });
+    t.appendChild(tb); wrap.appendChild(t); root.appendChild(wrap);
+  }
 
   function renderPresence(root) {
     const p = state.result.presence, a = state.A.coder, b = state.B.coder;
@@ -1015,6 +1182,8 @@ const UI = (() => {
       ['ICC(3,1)', 'Two-way mixed, consistency, single rater']
     ], rows, 1));
 
+    renderParagraphs(root);
+
     root.appendChild(h('h2', null, 'Note level (code counts)'));
     const n = r.note;
     root.appendChild(table([['Code'], ['Spans A'], ['Spans B']],
@@ -1032,9 +1201,10 @@ const UI = (() => {
     [
       ['Character IoU', 'For each code, the characters each coder covered (by offsets) are compared: intersection ÷ union. Micro pools all codes; macro averages the per-code values. Dice = 2·intersection ÷ (A + B).'],
       ['Span matching', 'Spans with the same code are paired one-to-one, greedily by descending IoU, keeping pairs with IoU ≥ the threshold. Precision = matches ÷ B spans, recall = matches ÷ A spans, F1 = 2·matches ÷ (A + B). Ids are never used for matching.'],
-      ['Text units', 'Tokens are runs of non-whitespace. Sentences split at line breaks and at . ! ? followed by whitespace (approximate; abbreviations such as "Dr." will split). Characters exclude whitespace.'],
+      ['Text units', 'Tokens are runs of non-whitespace. Sentences split at line breaks and at . ! ? followed by whitespace (approximate; abbreviations such as "Dr." will split). Paragraphs split at blank lines. Characters exclude whitespace.'],
       ['Cohen κ and Krippendorff α', 'Computed per code on binary presence per unit. Pooled versions stack every unit × code pair. The label-set version treats the exact set of codes on each unit as one nominal category (∅ when uncoded). With two coders and no missing data, α is nominal Krippendorff α from the coincidence matrix. Values are undefined (—) when there is no variation.'],
       ['ICC', 'Computed per code on the proportion of each unit covered (0–1), using ANOVA mean squares: ICC(2,1) = (MSR − MSE) ÷ (MSR + MSE + 2(MSC − MSE)/n); ICC(3,1) = (MSR − MSE) ÷ (MSR + MSE). At note level, ICC uses span counts per code, which is only informative with many codes or, better, many notes.'],
+      ['Paragraphs', 'A paragraph is a block of text separated from the next by one or more blank lines. Per paragraph: the codes each coder applied anywhere in it, character IoU pooled over codes, and token-level % agreement and Cohen κ pooled over tokens × codes. Paragraph-level κ and α treat every paragraph × code as a yes/no unit (the same as choosing "Paragraphs" as the text unit). Token κ is undefined (—) for paragraphs neither coder coded and is unstable for short paragraphs.'],
       ['Code present (yes / no)', 'For each code, whether each coder applied it anywhere in the note. % agreement, Cohen κ and nominal Krippendorff α are computed over codes. Positive agreement = 2·both yes ÷ (2·both yes + A only + B only); negative agreement is the same for "no". The all-codebook version adds one both-"no" row for every codebook code absent from both files, using codebook.code_count (only when both files share the same codebook hash).'],
       ['Interpretation bands', 'Krippendorff’s conventional thresholds: ≥ .800 reliable, .667–.800 tentative conclusions only, < .667 unreliable. When one category dominates (most text uncoded), κ and α can be low despite high raw agreement, so read them alongside % agree and IoU.']
     ].forEach(([t, dd]) => { dl.appendChild(h('dt', null, t)); dl.appendChild(h('dd', null, dd)); });
@@ -1113,6 +1283,8 @@ const UI = (() => {
       overall: r.overall,
       per_code: r.perCode,
       note_level: r.note,
+      paragraph_summary: r.paragraphSummary,
+      paragraphs: r.paragraphs,
       code_presence: r.presence,
       warnings: r.warnings,
       spans: r.spans.map(x => ({
@@ -1137,6 +1309,15 @@ const UI = (() => {
     return toCsv(meta.concat([head], rows));
   }
 
+  function paragraphsCsv() {
+    const r = state.result;
+    const rows = [['paragraph', 'start', 'end', 'first_line', 'tokens', 'spans_A', 'spans_B', 'codes_A', 'codes_B', 'code_set_status',
+      'chars_A', 'chars_B', 'char_iou', 'token_pct_agree', 'token_kappa']];
+    r.paragraphs.forEach(p => rows.push([p.index, p.start, p.end, p.heading, p.tokens, p.spansA, p.spansB, p.codesA.join('|'), p.codesB.join('|'),
+      p.status, p.charsA, p.charsB, p.charIoU, p.tokenPctAgree, p.tokenKappa]));
+    return toCsv(rows);
+  }
+
   function spansCsv() {
     const r = state.result;
     const rows = [['coder', 'coder_id', 'id', 'code', 'start', 'end', 'text', 'status', 'counterpart_id', 'counterpart_code', 'iou']];
@@ -1156,6 +1337,8 @@ const UI = (() => {
       () => download(baseName() + '__agreement.json', 'application/json', JSON.stringify(buildReport(), null, 2)));
     add('Per-code statistics (.csv)', 'One row per code plus an overall row.',
       () => download(baseName() + '__per_code.csv', 'text/csv', perCodeCsv()));
+    add('Paragraph table (.csv)', 'One row per paragraph with its codes and agreement. Contains the first line of each paragraph.',
+      () => download(baseName() + '__paragraphs.csv', 'text/csv', paragraphsCsv()));
     add('Span table (.csv)', 'Every span with its match status. Contains note text excerpts.',
       () => download(baseName() + '__spans.csv', 'text/csv', spansCsv()));
     add('Print statistics', 'Prints the Statistics tab (or save it as PDF from the print dialog).', () => window.print());

@@ -95,6 +95,41 @@ test('code present in note (yes/no)', () => {
   assert.equal(Core.compute(Core.normalize(A, 'A'), Core.normalize(B2, 'B'), { unit: 'token', thr: 0.5 }).presence.codebook, null);
 });
 
+test('per-paragraph statistics', () => {
+  const r = Core.compute(Core.normalize(A, 'A'), Core.normalize(B, 'B'), { unit: 'token', thr: 0.5 });
+  const P = r.paragraphs;
+  assert.equal(P.length, 20);
+  const byHead = h => P.find(p => p.heading.startsWith(h));
+  const subj = byHead('SUBJECTIVE');
+  assert.equal(subj.status, 'overlap');
+  assert.deepEqual(subj.codesA, ['physiological_failure', 'physiological_success']);
+  assert.deepEqual(subj.codesB, ['physiological_success']);
+  assert.equal(subj.spansA, 4); assert.equal(subj.spansB, 1);
+  close(subj.charIoU, 0.208696, 'SUBJECTIVE char IoU');      // tests/reference_check.py
+  close(subj.tokenKappa, 0.287599, 'SUBJECTIVE token kappa');
+  assert.equal(byHead('1. Acute').status, 'bonly');
+  const sed = byHead('3. Sedation');
+  assert.equal(sed.status, 'same'); assert.equal(sed.charIoU, 1); assert.equal(sed.tokenKappa, 1);
+  assert.equal(byHead('Code status').status, 'bonly');
+  assert.equal(byHead('OBJECTIVE').status, 'neither');
+  assert.equal(byHead('OBJECTIVE').tokenKappa, null);
+  const s = r.paragraphSummary;
+  assert.equal(s.codedByEither, 4); assert.equal(s.sameCodeSets, 1);
+  close(s.presenceAlpha, 0.548673, 'paragraph-level alpha');
+  close(s.presenceKappa, 0.545455, 'paragraph-level kappa');
+  // matches choosing "paragraph" as the text unit, and does not depend on the unit setting
+  const rp = Core.compute(Core.normalize(A, 'A'), Core.normalize(B, 'B'), { unit: 'paragraph', thr: 0.5 });
+  close(rp.overall.pooledAlpha, s.presenceAlpha, 'unit=paragraph pooled alpha');
+  const rc = Core.compute(Core.normalize(A, 'A'), Core.normalize(B, 'B'), { unit: 'char', thr: 0.5 });
+  close(rc.paragraphs[3].tokenKappa, subj.tokenKappa, 'independent of unit');
+});
+
+test('paragraph splitting handles multiple blank lines and whitespace-only lines', () => {
+  const t = 'One.\n\n\nTwo a.\nTwo b.\n  \t\nThree.\n';
+  const ws = new Uint8Array(t.length).map((_, i) => /\s/.test(t[i]) ? 1 : 0);
+  assert.deepEqual(Core.buildUnits(t, 'paragraph', ws).map(([s, e]) => t.slice(s, e)), ['One.', 'Two a.\nTwo b.', 'Three.']);
+});
+
 test('textbook statistics', () => {
   const { cohenKappa, alphaNominal, icc } = Core.stats;
   // perfect agreement

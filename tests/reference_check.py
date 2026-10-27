@@ -59,3 +59,47 @@ bad = {k: v for k, v in got.items() if abs(v - EXPECTED[k]) > 1e-5}
 if bad:
     raise SystemExit(f'MISMATCH vs JS core expectations: {bad}')
 print('PASS: reference values match the JavaScript core expectations')
+
+# ---- per-paragraph statistics (independent re-implementation) ----
+def paragraphs(t):
+    out, s = [], 0
+    for m in re.finditer(r'\n[ \t]*\n', t):
+        out.append((s, m.start())); s = m.end()
+    out.append((s, len(t)))
+    res = []
+    for s, e in out:
+        while s < e and t[s].isspace(): s += 1
+        while e > s and t[e - 1].isspace(): e -= 1
+        if e > s: res.append((s, e))
+    return res
+def covered(anns, code, i): return any(x['code'] == code and x['start'] <= i < x['end'] for x in anns)
+P = paragraphs(text)
+px, py = [], []
+for s, e in P:
+    for c in codes:
+        px.append(int(any(covered(a['annotations'], c, i) for i in range(s, e) if not text[i].isspace())))
+        py.append(int(any(covered(b['annotations'], c, i) for i in range(s, e) if not text[i].isspace())))
+px, py = np.array(px, float), np.array(py, float)
+para_alpha = kripp(np.vstack([px, py]), 'nominal')
+para_kappa = cohen_kappa_score(px, py) if cohen_kappa_score else None
+# paragraph 4 (SUBJECTIVE): char IoU pooled over codes, token kappa pooled over tokens x codes
+s, e = P[3]
+inter = uni = 0
+for c in codes:
+    A_ = {i for i in range(s, e) if covered(a['annotations'], c, i)}; B_ = {i for i in range(s, e) if covered(b['annotations'], c, i)}
+    inter += len(A_ & B_); uni += len(A_ | B_)
+tx, ty = [], []
+for m in re.finditer(r'\S+', text[s:e]):
+    ts, te = s + m.start(), s + m.end()
+    for c in codes:
+        tx.append(int(any(covered(a['annotations'], c, i) for i in range(ts, te))))
+        ty.append(int(any(covered(b['annotations'], c, i) for i in range(ts, te))))
+p4_kappa = cohen_kappa_score(tx, ty) if cohen_kappa_score else None
+print(f'paragraphs {len(P)}  para alpha {para_alpha:.6f}  para kappa {para_kappa}  p4 IoU {inter/uni:.6f}  p4 token kappa {p4_kappa}')
+PARA_EXPECTED = {'count': 20, 'alpha': 0.548673, 'kappa': 0.545455, 'p4_iou': 0.208696, 'p4_kappa': 0.287599}
+got = {'count': len(P), 'alpha': para_alpha, 'p4_iou': inter / uni}
+if para_kappa is not None: got['kappa'] = para_kappa; got['p4_kappa'] = p4_kappa
+bad = {k: v for k, v in got.items() if abs(v - PARA_EXPECTED[k]) > 1e-5}
+if bad:
+    raise SystemExit(f'MISMATCH (paragraphs) vs JS core expectations: {bad}')
+print('PASS: paragraph reference values match the JavaScript core expectations')

@@ -24,6 +24,10 @@ These screenshots show the app with the two files in [`examples/`](examples/): a
 
 ![Statistics tab: whole-note, per-code and note-level agreement](docs/screenshots/statistics.png)
 
+**By paragraph.** Each paragraph either coder coded, with both coders' codes, whether the code sets match, and agreement within the paragraph. Click a row to jump to it in the text.
+
+![Per-paragraph agreement table and summary](docs/screenshots/paragraphs.png)
+
 **Code present in the note (yes / no).** At the bottom of the Statistics tab: whether each coder used each code anywhere in the note. The measures are shown over the codes either coder used, and over the whole codebook, where the unused codes count as agreeing "no".
 
 ![Yes/no code presence table and agreement measures](docs/screenshots/code-presence.png)
@@ -48,17 +52,18 @@ It also flags annotations whose `id` and `created_at` are shared across files, w
 |---|---|
 | Per code | Character IoU, Dice, span precision / recall / F1, Cohen's κ, Krippendorff's α (nominal), ICC(2,1) and ICC(3,1) |
 | Whole note | Micro and macro IoU, code-agnostic IoU, overall span F1, pooled κ and α, label-set α |
+| By paragraph | For each paragraph (blocks separated by blank lines, e.g. each section or numbered problem): codes each coder applied, code-set agreement, character IoU, token-level % agreement and Cohen's κ. Summary: paragraphs coded, identical code sets, paragraph-level κ and α, mean IoU |
 | Note level | ICC and Krippendorff's α (interval) on span counts per code |
 | Code present (yes / no) | Whether each coder used each code anywhere in the note: 2×2 counts, % agreement, positive and negative agreement, Cohen's κ, Krippendorff's α. Computed over codes either coder used, and over the whole codebook (codes neither used count as agreeing "no") |
 
-Text-level statistics use a unit you choose: **tokens** (default), **sentences/lines**, or **characters**. Span matching uses an adjustable IoU threshold (default 0.5). Krippendorff's conventional reliability bands are shown next to each α. The **How these are calculated** section on the page gives exact definitions.
+Text-level statistics use a unit you choose: **tokens** (default), **sentences/lines**, **paragraphs**, or **characters**. Span matching uses an adjustable IoU threshold (default 0.5). Krippendorff's conventional reliability bands are shown next to each α. The **How these are calculated** section on the page gives exact definitions.
 
 **Spans tab.** Every span from both coders, labeled *matched*, *partial overlap*, *different code*, *same code elsewhere* or *no counterpart*. Click a row to jump to it in the text.
 
 **Export tab.** Exports are:
 
 - a full JSON report with all statistics, settings, validation results and file hashes, for reproducibility;
-- per-code and span CSVs;
+- per-code, per-paragraph and span CSVs;
 - a print/PDF view of the statistics.
 
 ## Interpreting the numbers
